@@ -1,0 +1,125 @@
+<% layout("/layouts/boilerplate") %>
+
+<div class="row">
+  <div class="col-8 offset-2">
+    <br /><br />
+    <h3>Sell an Item</h3>
+
+    <form
+      method="POST"
+      action="/products"
+      novalidate
+      class="needs-validation"
+      enctype="multipart/form-data"
+    >
+      <div class="mb-3">
+        <label for="title" class="form-label">Title</label>
+        <input
+          name="product[title]"
+          placeholder="What are you selling? (e.g. Engineering Mechanics Book)"
+          type="text"
+          class="form-control"
+          required
+        />
+        <div class="valid-feedback">Looks good!</div>
+        <div class="invalid-feedback">Please provide a title</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="description" class="form-label">Description</label>
+        <textarea
+          name="product[description]"
+          placeholder="Describe the item (e.g. 2nd Edition, slightly used...)"
+          class="form-control"
+          rows="3"
+          required
+        ></textarea>
+        <div class="invalid-feedback">Please provide a description</div>
+      </div>
+
+      <div class="row">
+        <div class="mb-3 col-md-6">
+            <label for="category" class="form-label">Category</label>
+            <select name="product[category]" class="form-select" required>
+                <option value="" selected disabled>Select Category</option>
+                <option value="Books">Books</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Stationery">Stationery</option>
+                <option value="Clothing">Clothing</option>
+                <option value="Furniture">Furniture</option>
+                <option value="Sports">Sports</option>
+                <option value="Other">Other</option>
+            </select>
+            <div class="invalid-feedback">Please select a category</div>
+        </div>
+
+        <div class="mb-3 col-md-6">
+            <label for="condition" class="form-label">Condition</label>
+            <select name="product[condition]" class="form-select" required>
+                <option value="" selected disabled>Select Condition</option>
+                <option value="New">Brand New</option>
+                <option value="Like New">Like New (Used once/twice)</option>
+                <option value="Good">Good (Normal wear)</option>
+                <option value="Fair">Fair (Functional but worn)</option>
+            </select>
+            <div class="invalid-feedback">Please select the condition</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="mb-3 col-md-6">
+            <label for="college" class="form-label">College / University</label>
+            <input 
+                name="product[college]" 
+                placeholder="e.g. IIT Delhi" 
+                type="text" 
+                class="form-control" 
+                required
+            />
+            <div class="invalid-feedback">Please enter your college name</div>
+        </div>
+
+        <div class="mb-3 col-md-6">
+            <label for="location" class="form-label">Pickup Location</label>
+            <input
+              name="product[location]"
+              placeholder="e.g. Hostel Block A, Main Canteen"
+              type="text"
+              class="form-control"
+              required
+            />
+            <div class="invalid-feedback">Please enter a meeting spot</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="mb-3 col-md-4">
+          <label for="price" class="form-label">Price (₹)</label>
+          <input
+            name="product[price]"
+            placeholder="150"
+            type="number"
+            class="form-control"
+            required
+            min="0"
+          />
+          <div class="invalid-feedback">Please enter a valid price</div>
+        </div>
+
+        <div class="mb-3 col-md-8">
+            <label for="image" class="form-label">Upload Images (Max 5)</label>
+            <input 
+                name="product[images]" 
+                type="file" 
+                class="form-control" 
+                multiple 
+                required
+            />
+        </div>
+      </div>
+
+      <button class="btn btn-dark add-btn mt-3">Post Item</button>
+      <br /><br />
+    </form>
+  </div>
+</div>

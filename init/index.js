@@ -1,12 +1,14 @@
 const mongoose = require("mongoose");
 const initData = require("./data.js");
-const Listing = require("../models/listing.js");
+const Product = require("../models/product.js"); // CHANGED: Listing -> Product
+const User = require("../models/user.js"); // CHANGED: Import User to find a valid owner
 
-const MONGO_URL = "mongodb://127.0.0.1:27017/wanderlust";
+// CHANGED: Database name updated
+const MONGO_URL = "mongodb://127.0.0.1:27017/quick_sell";
 
 main()
   .then(() => {
-    console.log("connected to DB");
+    console.log("Connected to Quick Sell DB");
   })
   .catch((err) => {
     console.log(err);
@@ -17,14 +19,29 @@ async function main() {
 }
 
 const initDB = async () => {
-  await Listing.deleteMany({});
+  // 1. Clean the database
+  await Product.deleteMany({});
+  console.log("Deleted old data");
+
+  // 2. Find a valid user to be the owner
+  const owner = await User.findOne({});
+  if (!owner) {
+      console.log("Error: No users found! Please signup a user on the website first.");
+      process.exit(1);
+  }
+
+  // 3. Assign that user as the owner for all sample products
   initData.data = initData.data.map((obj) => ({
     ...obj,
-    owner: "68ee234a09e9a047990aae3b",
+    owner: owner._id, 
   }));
-  await Listing.deleteMany({});
-  await Listing.insertMany(initData.data);
-  console.log("data was initialized");
+
+  // 4. Insert the data
+  await Product.insertMany(initData.data);
+  console.log("Data was initialized successfully");
 };
 
-initDB();
+initDB().then(() => {
+    // Optional: Close connection after seeding
+    mongoose.connection.close();
+});

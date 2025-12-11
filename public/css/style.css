@@ -1,125 +1,274 @@
-body{
-    font-family: "Plus jakarta Sans" , sans-serif !important;
+/* --- VARIABLES & RESET --- */
+:root {
+    --primary: #FF4757;       
+    --primary-hover: #FF6B81;
+    --secondary: #2F3542;     
+    --bg-color: #F8F9FA;      
+    --card-bg: #FFFFFF;
+    --text-main: #2F3542;
+    --text-muted: #747D8C;
+    --radius: 16px;           
+    --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.05);
+    --shadow-hover: 0 12px 24px rgba(255, 71, 87, 0.15);
+    --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    background-color: var(--bg-color);
+    color: var(--text-main);
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-
-}
-.container{
-    flex: 1;
+    overflow-x: hidden;
 }
 
+.container {
+    flex: 1; 
+}
+
+/* --- ANIMATIONS --- */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+}
+
+/* --- NAVBAR --- */
 .navbar {
     height: 5rem;
-    background-color: white;
-
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(10px); 
+    border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+    box-shadow: var(--shadow-sm);
 }
 
-.fa-compass {
-    color: #fe424d;
-    font-size: 2rem;
+.navbar-brand {
+    font-weight: 800;
+    font-size: 1.5rem;
+    color: var(--primary) !important;
+    letter-spacing: -0.5px;
 }
 
 .nav-link {
-    color: #222222 !important;
+    color: var(--secondary) !important;
+    font-weight: 600;
+    transition: var(--transition);
+    margin: 0 5px;
 }
 
+.nav-link:hover {
+    color: var(--primary) !important;
+    transform: translateY(-2px);
+}
 
-/* footer */
+/* --- BUTTONS --- */
+.btn-search, .add-btn, .edit-btn {
+    background: linear-gradient(135deg, var(--primary), #FF6348) !important;
+    color: #fff !important;
+    border-radius: 50px !important;
+    padding: 0.5rem 1.5rem;
+    border: none !important;
+    box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
+    transition: var(--transition);
+}
+
+.btn-search:hover, .add-btn:hover, .edit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 71, 87, 0.4);
+    color: white !important;
+}
+
+.search-inp {
+    border-radius: 50px;
+    padding: 0.7rem 1.5rem;
+    background-color: #f1f2f6;
+    border: 1px solid transparent;
+    transition: var(--transition);
+}
+
+.search-inp:focus {
+    background-color: #fff;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(255, 71, 87, 0.1);
+}
+
+/* --- PREMIUM PRODUCT CARDS --- */
+.listing-card {
+    border: none !important;
+    border-radius: var(--radius) !important;
+    background: #fff;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+    transition: all 0.3s ease;
+    overflow: hidden;
+    position: relative;
+    height: 100%;
+}
+
+.listing-card:hover {
+    transform: translateY(-8px); 
+    box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+}
+
+.card-img-wrapper {
+    position: relative;
+    height: 240px; 
+    overflow: hidden;
+}
+
+.card-img-top {
+    height: 100%;
+    width: 100%;
+    object-fit: cover;
+    transition: transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.listing-card:hover .card-img-top {
+    transform: scale(1.1); 
+}
+
+/* UPDATED: Glassmorphism Badge */
+.card-badge-top-left {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background: rgba(255, 255, 255, 0.75); /* More transparent */
+    backdrop-filter: blur(8px); /* Frosted Glass Effect */
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--secondary);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    border: 1px solid rgba(255,255,255,0.4);
+    z-index: 2;
+}
+
+/* Gradient Overlay */
+.img-overlay-gradient {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 50%;
+    background: linear-gradient(to top, rgba(0,0,0,0.4), transparent);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.card-body {
+    padding: 1.25rem !important;
+}
+
+.card-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--secondary);
+}
+
+.card-college {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.card-college i {
+    color: var(--primary);
+}
+
+/* UPDATED: Price Badge Pop */
+.price-badge {
+    font-size: 1.2rem; /* Larger */
+    font-weight: 800; /* Bolder */
+    color: var(--primary); /* Primary Red color */
+    transition: transform 0.3s ease;
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.price-badge:hover {
+    transform: scale(1.15); 
+    text-shadow: 0 4px 10px rgba(255, 71, 87, 0.2);
+}
+
+.listing-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* --- FILTERS --- */
+#filters {
+    background: white;
+    padding: 1rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 2rem;
+}
+
+.filter {
+    text-align: center;
+    opacity: 0.6;
+    transition: var(--transition);
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+}
+
+.filter:hover {
+    opacity: 1;
+    background-color: #fff0f1; 
+    color: var(--primary);
+    transform: scale(1.05);
+}
+
+.filter i {
+    font-size: 1.4rem;
+    margin-bottom: 0.3rem;
+}
+
+/* --- SHOW PAGE --- */
+.show-card {
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.show-img {
+    height: 30vh;
+    object-fit: cover;
+}
+
+.btns {
+    display: flex;
+    gap: 1rem; 
+}
+
+.carousel-item img {
+    border-radius: var(--radius);
+}
+
+/* --- FOOTER --- */
+footer {
+    background-color: white !important;
+    margin-top: auto;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.03);
+}
 
 .f-info-links a {
     text-decoration: none;
-    color: #222222;
+    color: var(--secondary);
+    transition: color 0.2s;
 }
 
 .f-info-links a:hover {
+    color: var(--primary);
     text-decoration: underline;
 }
-
-.f-info-links, .f-info-socials, .f-info-brand{
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.f-info-socials i{
-    margin-right: 1rem;
-    font-size: 1.2rem;
-
-}
-
-
-.f-info {
-    text-align: center;
-    height: 8rem;
-    background-color:  #ebebeb;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: space-evenly;
-}
-
-/* card */
-
-.listing-card { 
-border: none !important; 
-margin-bottom: 2rem;  
-}
-
-.card-img-top { 
-border-radius: 1rem !important; 
-width: 100% !important; 
-object-fit: cover !important; 
-}
-
-.card-body { 
-padding: 0 !important; 
-}
-
-.card-text p{ 
-font-weight: 400;
-}
-
- .listing-link{
-   text-decoration: none;
- }
-
- /* card effect */
-
- .card-img-overlay{
-    opacity: 0;
- }
-
- .card-img-overlay:hover{
-    opacity: 0.2;
-background-color: white;
- }
-
- .add-btn{
-    background-color: #fe424d !important;
-    border: none !important;
- }
-
- /* edit page */
-
- .edit-btn{
-     background-color: #fe424d !important;
-    border: none !important;
- }
-
-
- /* showpage */
-
- .show-img{
-     height: 30vh;
- }
-
- .btns{
-    display: flex;
- }
-
- .show-card{
-    padding-left: 0;
-    padding-right: 0;
- }

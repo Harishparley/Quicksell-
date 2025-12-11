@@ -1,0 +1,107 @@
+<% layout("/layouts/boilerplate") %>
+
+<div class="row mt-4">
+    <!-- User Info Card -->
+    <div class="col-md-4 mb-4">
+        <div class="card border-0 shadow-sm text-center p-4">
+            <div class="mb-3">
+                <i class="fa-solid fa-circle-user fa-6x text-secondary"></i>
+            </div>
+            <h3 class="fw-bold"><%= user.username %></h3>
+            <p class="text-muted mb-1"><i class="fa-solid fa-graduation-cap"></i> <%= user.college %></p>
+            <p class="text-muted"><i class="fa-solid fa-envelope"></i> <%= user.email %></p>
+            
+            <hr>
+
+            <!-- PHONE NUMBER SECTION (Updated) -->
+            <div class="mb-3">
+                <label class="form-label text-muted fw-bold" style="font-size: 0.9rem;">WhatsApp Contact</label>
+                
+                <% if(user.phone) { %>
+                    <div class="mb-2">
+                        <span class="text-success fw-bold fs-5">
+                            <i class="fa-brands fa-whatsapp"></i> +91 <%= user.phone %>
+                        </span>
+                    </div>
+                    
+                    <!-- Toggle Update Form -->
+                    <button class="btn btn-sm btn-outline-secondary mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#updatePhoneForm" aria-expanded="false" aria-controls="updatePhoneForm">
+                        <i class="fa-solid fa-pen"></i> Change Number
+                    </button>
+                    
+                    <div class="collapse mt-2" id="updatePhoneForm">
+                        <form action="/profile/phone?_method=PUT" method="POST" class="d-flex gap-1 justify-content-center">
+                            <input name="phone" type="number" class="form-control form-control-sm" placeholder="New Number" required value="<%= user.phone %>">
+                            <button class="btn btn-sm btn-dark">Update</button>
+                        </form>
+                    </div>
+
+                <% } else { %>
+                    <!-- Alert for missing phone -->
+                    <div class="alert alert-warning p-2" style="font-size: 0.9rem;">
+                        <i class="fa-solid fa-triangle-exclamation"></i> <b>Action Required</b><br>
+                        Add your number so buyers can contact you.
+                    </div>
+                    <form action="/profile/phone?_method=PUT" method="POST" class="mt-2 d-flex gap-1">
+                        <input name="phone" type="number" class="form-control form-control-sm" placeholder="9876543210" required>
+                        <button class="btn btn-sm btn-dark">Save</button>
+                    </form>
+                <% } %>
+            </div>
+
+            <hr>
+            <div class="d-flex justify-content-around text-center">
+                <div>
+                    <h4 class="fw-bold mb-0"><%= products.length %></h4>
+                    <small class="text-muted">Items Listed</small>
+                </div>
+                <div>
+                    <h4 class="fw-bold mb-0">Active</h4>
+                    <small class="text-muted">Status</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- My Listings Section -->
+    <div class="col-md-8">
+        <h3 class="mb-4 fw-bold">My Listings</h3>
+        
+        <% if(products.length === 0) { %>
+            <div class="alert alert-light text-center p-5 shadow-sm border-0 rounded-4">
+                <h4>You haven't listed anything yet!</h4>
+                <a href="/products/new" class="btn btn-search mt-3 text-white">Sell your first item</a>
+            </div>
+        <% } %>
+
+        <div class="row row-cols-1 row-cols-md-2 g-4">
+            <% for(let product of products) { %>
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0 listing-card">
+                        <div class="position-relative">
+                             <img 
+                                src="<%= product.images.length > 0 ? product.images[0].url : 'https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2029&auto=format&fit=crop' %>" 
+                                class="card-img-top" 
+                                style="height: 12rem; object-fit: cover;"
+                            >
+                            <div class="card-img-overlay p-2">
+                                <span class="badge bg-light text-dark"><%= product.condition %></span>
+                            </div>
+                        </div>
+                       
+                        <div class="card-body">
+                            <h5 class="card-title fw-bold text-truncate"><%= product.title %></h5>
+                            <p class="card-text text-primary fw-bold">&#8377; <%= product.price.toLocaleString("en-IN") %></p>
+                            <div class="d-flex gap-2">
+                                <a href="/products/<%= product._id %>/edit" class="btn btn-sm btn-outline-dark flex-grow-1">Edit</a>
+                                <form method="POST" action="/products/<%= product._id %>?_method=DELETE" class="flex-grow-1">
+                                    <button class="btn btn-sm btn-outline-danger w-100">Delete</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <% } %>
+        </div>
+    </div>
+</div>

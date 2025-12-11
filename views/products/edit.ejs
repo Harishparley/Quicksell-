@@ -1,0 +1,109 @@
+<% layout("/layouts/boilerplate") %>
+
+<div class="row mt-3">
+  <div class="col-8 offset-2">
+    <h3>Edit Product Details</h3>
+
+    <form
+      method="POST"
+      action="/products/<%= product._id %>?_method=PUT"
+      class="needs-validation"
+      novalidate
+      enctype="multipart/form-data"
+    >
+      <div class="mb-3">
+        <label for="title" class="form-label">Title</label>
+        <input
+          name="product[title]"
+          value="<%= product.title %>"
+          type="text"
+          class="form-control"
+          required
+        />
+      </div>
+
+      <div class="mb-3">
+        <label for="description" class="form-label">Description</label>
+        <textarea name="product[description]" class="form-control" rows="3" required><%= product.description %></textarea>
+      </div>
+
+      <div class="row">
+          <div class="mb-3 col-md-6">
+            <label for="category" class="form-label">Category</label>
+            <select name="product[category]" class="form-select" required>
+                <option value="Books" <%= product.category === 'Books' ? 'selected' : '' %>>Books</option>
+                <option value="Electronics" <%= product.category === 'Electronics' ? 'selected' : '' %>>Electronics</option>
+                <option value="Stationery" <%= product.category === 'Stationery' ? 'selected' : '' %>>Stationery</option>
+                <option value="Clothing" <%= product.category === 'Clothing' ? 'selected' : '' %>>Clothing</option>
+                <option value="Sports" <%= product.category === 'Sports' ? 'selected' : '' %>>Sports</option>
+                <option value="Other" <%= product.category === 'Other' ? 'selected' : '' %>>Other</option>
+            </select>
+          </div>
+
+          <div class="mb-3 col-md-6">
+            <label for="condition" class="form-label">Condition</label>
+            <select name="product[condition]" class="form-select" required>
+                <option value="New" <%= product.condition === 'New' ? 'selected' : '' %>>Brand New</option>
+                <option value="Like New" <%= product.condition === 'Like New' ? 'selected' : '' %>>Like New</option>
+                <option value="Good" <%= product.condition === 'Good' ? 'selected' : '' %>>Good</option>
+                <option value="Fair" <%= product.condition === 'Fair' ? 'selected' : '' %>>Fair</option>
+            </select>
+          </div>
+      </div>
+
+      <div class="row">
+          <div class="mb-3 col-md-6">
+            <label for="college" class="form-label">College</label>
+            <input
+              name="product[college]"
+              value="<%= product.college %>"
+              type="text"
+              class="form-control"
+              required
+            />
+          </div>
+          <div class="mb-3 col-md-6">
+            <label for="location" class="form-label">Location</label>
+            <input
+              name="product[location]"
+              value="<%= product.location %>"
+              type="text"
+              class="form-control"
+              required
+            />
+          </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Current Images</label>
+        <div class="row">
+            <% product.images.forEach((img) => { %>
+                <div class="col-2">
+                    <img src="<%= img.url %>" class="img-thumbnail" style="height: 100px; object-fit: cover;">
+                </div>
+            <% }) %>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="image" class="form-label">Add More Images</label>
+        <input name="product[images]" type="file" class="form-control" multiple />
+        <div class="form-text">Uploading new images will add them to the existing list.</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="price" class="form-label">Price</label>
+        <input
+          name="product[price]"
+          value="<%= product.price %>"
+          type="number"
+          class="form-control"
+          required
+        />
+      </div>
+
+      <button class="btn btn-dark edit-btn mt-3">Update Product</button>
+      <br /><br />
+    </form>
+  </div>
+</div>

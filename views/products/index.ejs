@@ -1,0 +1,195 @@
+<% layout("/layouts/boilerplate") %>
+
+<style>
+  /* Filter Container */
+  .filter-container {
+    display: flex;
+    overflow-x: auto; 
+    gap: 2rem; 
+    padding: 0.5rem 0; 
+    scrollbar-width: none; 
+    -ms-overflow-style: none; 
+    justify-content: center;
+  }
+  
+  .filter-container::-webkit-scrollbar { 
+    display: none; 
+  }
+
+  .filter-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 70px;
+    opacity: 0.6;
+    transition: all 0.2s;
+    cursor: pointer;
+    text-decoration: none !important;
+    color: var(--text-main);
+    border-radius: 20px; 
+    padding: 10px;
+  }
+
+  /* UPDATED: Active state style */
+  .filter-pill:hover, .filter-pill.active {
+    opacity: 1;
+    transform: translateY(-3px); 
+    color: var(--primary);
+    background-color: rgba(255, 71, 87, 0.08); /* Subtle pink bg */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  }
+
+  .filter-pill i {
+    font-size: 1.4rem;
+    margin-bottom: 0.3rem;
+  }
+  
+  .filter-pill p {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .sticky-filters {
+    background: #ffffff; 
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    padding-top: 1rem; 
+  }
+
+  /* Price Badge Styling */
+  .price-badge {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--secondary);
+    transition: transform 0.3s ease;
+    display: inline-block;
+    white-space: nowrap;
+  }
+
+  .price-badge:hover {
+    transform: scale(1.1);
+    color: var(--primary);
+  }
+
+  /* NEW: Card Body Styling for better separation */
+  .listing-card .card-body {
+    background-color: #f8f9fa; /* Light grey background for text area */
+    border-bottom-left-radius: 16px; /* Smooth corners matching CSS radius */
+    border-bottom-right-radius: 16px;
+  }
+</style>
+
+<!-- MARKETPLACE FILTERS -->
+<div class="container-fluid sticky-filters shadow-sm">
+    <div class="filter-container">
+      <a href="/products" class="filter-pill" id="filter-all">
+        <i class="fa-solid fa-layer-group"></i>
+        <p>All</p>
+      </a>
+      <a href="/products?category=Books" class="filter-pill" id="filter-Books">
+        <i class="fa-solid fa-book"></i>
+        <p>Books</p>
+      </a>
+      <a href="/products?category=Electronics" class="filter-pill" id="filter-Electronics">
+        <i class="fa-solid fa-laptop"></i>
+        <p>Tech</p>
+      </a>
+      <a href="/products?category=Stationery" class="filter-pill" id="filter-Stationery">
+        <i class="fa-solid fa-pen-ruler"></i>
+        <p>Stationery</p>
+      </a>
+      <a href="/products?category=Clothing" class="filter-pill" id="filter-Clothing">
+        <i class="fa-solid fa-shirt"></i>
+        <p>Wear</p>
+      </a>
+      <a href="/products?category=Furniture" class="filter-pill" id="filter-Furniture">
+        <i class="fa-solid fa-chair"></i>
+        <p>Furniture</p>
+      </a>
+      <a href="/products?category=Sports" class="filter-pill" id="filter-Sports">
+        <i class="fa-solid fa-basketball"></i>
+        <p>Sports</p>
+      </a>
+      <a href="/products?category=Other" class="filter-pill" id="filter-Other">
+        <i class="fa-solid fa-box-open"></i>
+        <p>Other</p>
+      </a>
+    </div>
+</div>
+
+<!-- PRODUCT GRID -->
+<div class="row row-cols-lg-3 row-cols-md-2 row-cols-sm-1 mt-4 g-4 mb-5">
+  <% for(let product of allProducts){ %>
+    <a href="/products/<%= product._id %>" class="listing-link text-decoration-none col">
+      <div class="card listing-card h-100 border-0 shadow-sm">
+        
+        <!-- IMAGE WRAPPER -->
+        <div class="card-img-wrapper position-relative">
+            
+            <!-- 1. Condition Badge (Stick to Top Left) -->
+            <div class="position-absolute top-0 start-0 m-3 z-2">
+                <span class="badge bg-light text-dark shadow-sm rounded-pill px-3 py-2 fw-bold">
+                    <%= product.condition %>
+                </span>
+            </div>
+
+            <!-- Removed Price Badge from here -->
+
+            <!-- The Image -->
+            <img 
+              src="<%= product.images.length > 0 ? product.images[0].url : 'https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2029&auto=format&fit=crop' %>" 
+              class="card-img-top w-100" 
+              alt="product_image" 
+              style="height: 250px; object-fit: cover;"
+            />
+            
+            <!-- Subtle Bottom Gradient (Optional depth) -->
+            <div class="position-absolute bottom-0 w-100" style="height: 20%; background: linear-gradient(to top, rgba(0,0,0,0.1), transparent);"></div>
+        </div>
+
+        <!-- DETAILS BODY -->
+        <div class="card-body p-3 pt-2">
+          <!-- Title and Price on same row -->
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <h5 class="card-title fw-bold text-dark text-truncate mb-0 me-2" style="flex: 1;"><%= product.title %></h5>
+            <!-- Price Badge Pop -->
+            <span class="price-badge">
+                &#8377; <%= product.price.toLocaleString("en-IN") %>
+            </span>
+          </div>
+          
+          <div class="card-college text-muted d-flex align-items-center gap-2" style="font-size: 0.9rem;">
+             <i class="fa-solid fa-location-dot text-danger"></i> 
+             <span><%= product.college %></span>
+          </div>
+        </div>
+
+      </div>
+    </a>
+  <% } %>
+</div>
+
+<!-- No Results Message -->
+<% if(allProducts.length === 0) { %>
+    <div class="alert alert-light shadow-sm col-md-6 offset-md-3 mt-5 text-center p-5 border-0 rounded-4">
+        <h4 class="text-muted"><i class="fa-solid fa-magnifying-glass-minus fa-2x mb-3"></i><br>No items found!</h4>
+        <p class="mb-4">Try searching for something else.</p>
+        <a href="/products" class="btn btn-search text-white">View All Products</a>
+    </div>
+<% } %>
+
+<!-- SCRIPT TO HIGHLIGHT ACTIVE FILTER -->
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const category = params.get("category");
+    
+    // Remove active class from all
+    document.querySelectorAll('.filter-pill').forEach(el => el.classList.remove('active'));
+
+    if (!category) {
+        document.getElementById('filter-all').classList.add('active');
+    } else {
+        const activeEl = document.getElementById(`filter-${category}`);
+        if(activeEl) activeEl.classList.add('active');
+    }
+</script>

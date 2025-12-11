@@ -1,7 +1,6 @@
 if (process.env.NODE_ENV != "production") {
   require("dotenv").config();
 }
-console.log(process.env.SECRET);
 
 const express = require("express");
 const app = express();
@@ -16,31 +15,34 @@ const passport = require("passport");
 const LocalStrategy = require("passport-local");
 const User = require("./models/user.js");
 
-const listingRouter = require("./routes/listing.js");
+// Route Imports
+const productRouter = require("./routes/product.js");
 const reviewRouter = require("./routes/review.js");
-const userRouter = require("./routes/user.js");
+const userRouter = require("./routes/user.js"); // Ensure filename is user.js (singular)
 
-const MONGO_URL = "mongodb://127.0.0.1:27017/wanderlust";
+const MONGO_URL = "mongodb://127.0.0.1:27017/quick_sell";
 
 main()
   .then(() => {
-    console.log("connected to DB");
+    console.log("Connected to Quick Sell DB");
   })
   .catch((err) => {
     console.log(err);
   });
+
 async function main() {
   await mongoose.connect(MONGO_URL);
 }
+
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
-app.use(express.urlencoded({ extended: true })); //hamara data jo req ke andr aa rha he use parse kr paye
+app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
 app.engine("ejs", ejsMate);
 app.use(express.static(path.join(__dirname, "/public")));
 
 const sessionOptions = {
-  secret: process.env.SECRET,
+  secret: process.env.SECRET || "thisshouldbeabettersecret",
   resave: false,
   saveUninitialized: true,
   cookie: {
@@ -50,9 +52,9 @@ const sessionOptions = {
   },
 };
 
-// app.get("/", (req, res) => {
-//   res.send("hii i am roots");
-// });
+app.get("/", (req, res) => {
+  res.redirect("/products");
+});
 
 app.use(session(sessionOptions));
 app.use(flash());
@@ -68,33 +70,23 @@ app.use((req, res, next) => {
   res.locals.success = req.flash("success");
   res.locals.error = req.flash("error");
   res.locals.currUser = req.user;
-
   next();
 });
 
-// app.get("/demoUser", async (req, res) => {
-// let fakeUser = new User({
-// email: "student@gmail.com",
-// username: "delta-student",
-// });
-// let registeredUser = await User.register(fakeUser, "helloworld");
-// res.send(registeredUser);
-// });
+// --- ROUTE MOUNTING ---
+app.use("/products", productRouter);
+app.use("/products/:id/reviews", reviewRouter);
+app.use("/", userRouter); // This enables /profile, /login, /signup
 
-app.use("/listings", listingRouter);
-app.use("/listings/:id/reviews", reviewRouter);
-app.use("/", userRouter);
-
-// app.all("*", (req,res,next)=>{
+// app.use("*", (req, res, next) => {
 //   next(new ExpressError(404, "Page Not Found!"));
 // });
 
 app.use((err, req, res, next) => {
-  let { statusCode = 500, message = "something wend wrong" } = err;
-  res.status(statusCode).render("error.ejs", { message });
-  // res.status(statusCode).send(message);
+  let { statusCode = 500, message = "Something went wrong!" } = err;
+  res.status(statusCode).render("error.ejs", { message, err });
 });
 
 app.listen(8080, () => {
-  console.log("App is listening at 8080");
+  console.log("Quick Sell App is listening on port 8080");
 });

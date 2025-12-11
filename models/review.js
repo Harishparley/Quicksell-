@@ -10,11 +10,12 @@ const reviewSchema = new Schema({
   },
   createdAt: {
     type: Date,
-    default: Date.now(),
+    default: Date.now, // FIXED: Removed () so it captures the current time correctly
   },
-  author : {
-    type : Schema.Types.ObjectId,
+  author: {
+    type: Schema.Types.ObjectId,
     ref: "User",
-  }
+  },
 });
+
 module.exports = mongoose.model("Review", reviewSchema);
