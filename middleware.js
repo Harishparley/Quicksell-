@@ -29,8 +29,20 @@ module.exports.isOwner = async (req, res, next) => {
   next();
 };
 
-// SERVER SIDE VALIDATION FOR PRODUCTS
+// --- NEW SECURITY CHECK ---
+module.exports.isVerified = (req, res, next) => {
+    if (req.user && !req.user.isVerified) {
+        req.flash("error", "You must verify your ID card before selling!");
+        return res.redirect("/profile"); 
+    }
+    next();
+};
+
 module.exports.validateProduct = (req, res, next) => {
+  // Fix for schema validation
+  if(req.body.product && req.user) {
+      req.body.product.college = req.user.college;
+  }
   let { error } = productSchema.validate(req.body);
   if (error) {
     let errMsg = error.details.map((el) => el.message).join(",");
@@ -40,7 +52,6 @@ module.exports.validateProduct = (req, res, next) => {
   }
 };
 
-// VALIDATE REVIEWS
 module.exports.validateReview = (req, res, next) => {
   let { error } = reviewSchema.validate(req.body);
   if (error) {

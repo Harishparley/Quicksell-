@@ -11,13 +11,22 @@ const userSchema = new Schema({
     type: String,
     required: true, 
   },
-  // CHANGED: Removed 'required: true' so old data works fine
-  phone: {
+  // CHANGED: Renamed 'phone' to 'contact' to match your form
+  contact: {
     type: Number,
-    default: null
+    required: true,
+  },
+  // --- NEW FIELDS FOR AI VERIFICATION ---
+  enrollment: {
+    type: String,
+    required: true,
+    unique: true 
+  },
+  isVerified: {
+    type: Boolean,
+    default: false 
   }
 });
 
 userSchema.plugin(passportLocalMongoose);
-
 module.exports = mongoose.model("User", userSchema);

@@ -1,7 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const wrapAsync = require("../utils/wrapAsync.js");
-const { isLoggedIn, isOwner, validateProduct } = require("../middleware.js");
+// IMPORT isVerified
+const { isLoggedIn, isOwner, validateProduct, isVerified } = require("../middleware.js");
 const productController = require("../controllers/product.js");
 const multer = require("multer");
 const { storage } = require("../cloudConfig.js");
@@ -13,6 +14,7 @@ router
   .get(wrapAsync(productController.index))
   .post(
     isLoggedIn,
+    isVerified, // <--- ADDED SECURITY HERE
     upload.array("product[images]", 5), 
     validateProduct,
     wrapAsync(productController.createProduct)
@@ -20,7 +22,6 @@ router
 
 router.get("/new", isLoggedIn, productController.renderNewForm);
 
-// CHECK THIS BLOCK CAREFULLY IN YOUR CODE
 router
   .route("/:id") 
   .get(wrapAsync(productController.showProduct))
@@ -33,7 +34,6 @@ router
   )
   .delete(isLoggedIn, isOwner, wrapAsync(productController.destroyProduct));
 
-// AND THIS ONE
 router.get(
   "/:id/edit",
   isLoggedIn,
