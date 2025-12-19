@@ -1,63 +1,118 @@
 <% layout("/layouts/boilerplate") %>
 
-<div class="row mt-4">
+<!-- 1. IMPORT BOOTSTRAP JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" xintegrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+
+<!-- CUSTOM STYLES FOR ANIMATIONS -->
+<style>
+    /* CRITICAL FIX: Added 'all' to animate Opacity, Color, and Transform together */
+    .modal-content {
+        transition: all 0.5s ease-in-out;
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    /* Green Fade (Safe/Cancel) - Turn Green and Fade Out */
+    .fade-green {
+        background-color: #d1e7dd !important;
+        border-color: #badbcc !important;
+        transform: scale(0.9); /* Shrink slightly */
+        opacity: 0;            /* Fade to invisible */
+    }
+
+    /* Red Fade (Danger/Delete) - Turn Red and Fade Out */
+    .fade-red {
+        background-color: #f8d7da !important;
+        border-color: #f5c2c7 !important;
+        transform: scale(1.1); /* Grow slightly (Pulse) */
+        opacity: 0;            /* Fade to invisible */
+    }
+    
+    /* Force Modal to be on top */
+    .modal { z-index: 10555 !important; }
+    .modal-backdrop { z-index: 10444 !important; }
+</style>
+
+<div class="row mt-4 mb-5">
     <!-- User Info Card -->
     <div class="col-md-4 mb-4">
-        <div class="card border-0 shadow-sm text-center p-4">
-            <div class="mb-3">
-                <i class="fa-solid fa-circle-user fa-6x text-secondary"></i>
+        <div class="card border-0 shadow-sm p-4">
+            <div class="text-center">
+                <div class="mb-3">
+                    <i class="fa-solid fa-circle-user fa-6x text-secondary"></i>
+                </div>
+                <h3 class="fw-bold">
+                    <%= user.username %> 
+                    <% if(user.isVerified) { %>
+                        <i class="fas fa-check-circle text-primary fs-5" title="Verified Student"></i>
+                    <% } %>
+                </h3>
+                <p class="text-muted mb-1"><i class="fa-solid fa-graduation-cap"></i> <%= user.college %></p>
+                <p class="text-muted"><i class="fa-solid fa-envelope"></i> <%= user.email %></p>
+                <p class="text-muted small"><i class="fa-solid fa-id-card"></i> <%= user.enrollment %></p>
             </div>
-            <h3 class="fw-bold"><%= user.username %></h3>
-            <p class="text-muted mb-1"><i class="fa-solid fa-graduation-cap"></i> <%= user.college %></p>
-            <p class="text-muted"><i class="fa-solid fa-envelope"></i> <%= user.email %></p>
             
             <hr>
 
-            <!-- PHONE NUMBER SECTION (Updated) -->
-            <div class="mb-3">
+            <!-- PHONE NUMBER SECTION -->
+            <div class="mb-3 text-center">
                 <label class="form-label text-muted fw-bold" style="font-size: 0.9rem;">WhatsApp Contact</label>
                 
-                <% if(user.phone) { %>
+                <% if(user.contact) { %>
                     <div class="mb-2">
                         <span class="text-success fw-bold fs-5">
-                            <i class="fa-brands fa-whatsapp"></i> +91 <%= user.phone %>
+                            <i class="fa-brands fa-whatsapp"></i> +91 <%= user.contact %>
                         </span>
                     </div>
                     
-                    <!-- Toggle Update Form -->
-                    <button class="btn btn-sm btn-outline-secondary mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#updatePhoneForm" aria-expanded="false" aria-controls="updatePhoneForm">
-                        <i class="fa-solid fa-pen"></i> Change Number
+                    <button class="btn btn-sm btn-outline-secondary mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#updatePhoneForm">
+                        <i class="fa-solid fa-pen"></i> Edit
                     </button>
                     
                     <div class="collapse mt-2" id="updatePhoneForm">
                         <form action="/profile/phone?_method=PUT" method="POST" class="d-flex gap-1 justify-content-center">
-                            <input name="phone" type="number" class="form-control form-control-sm" placeholder="New Number" required value="<%= user.phone %>">
-                            <button class="btn btn-sm btn-dark">Update</button>
+                            <input name="contact" type="number" class="form-control form-control-sm" placeholder="New Number" required value="<%= user.contact %>">
+                            <button class="btn btn-sm btn-dark">Save</button>
                         </form>
                     </div>
 
                 <% } else { %>
-                    <!-- Alert for missing phone -->
-                    <div class="alert alert-warning p-2" style="font-size: 0.9rem;">
+                    <div class="alert alert-warning p-2 small">
                         <i class="fa-solid fa-triangle-exclamation"></i> <b>Action Required</b><br>
-                        Add your number so buyers can contact you.
+                        Add number.
                     </div>
                     <form action="/profile/phone?_method=PUT" method="POST" class="mt-2 d-flex gap-1">
-                        <input name="phone" type="number" class="form-control form-control-sm" placeholder="9876543210" required>
+                        <input name="contact" type="number" class="form-control form-control-sm" placeholder="9876543210" required>
                         <button class="btn btn-sm btn-dark">Save</button>
                     </form>
                 <% } %>
             </div>
 
             <hr>
-            <div class="d-flex justify-content-around text-center">
+            
+            <!-- Stats -->
+            <div class="d-flex justify-content-around text-center mb-4">
                 <div>
                     <h4 class="fw-bold mb-0"><%= products.length %></h4>
-                    <small class="text-muted">Items Listed</small>
+                    <small class="text-muted">Items</small>
                 </div>
                 <div>
-                    <h4 class="fw-bold mb-0">Active</h4>
+                    <h4 class="fw-bold mb-0 text-success">Active</h4>
                     <small class="text-muted">Status</small>
+                </div>
+            </div>
+
+            <!-- DANGER ZONE -->
+            <div class="card bg-light border-0">
+                <div class="card-body">
+                    <h6 class="text-danger fw-bold"><i class="fas fa-exclamation-triangle"></i> Danger Zone</h6>
+                    <p class="small text-muted mb-2">Deleting your account removes all listings.</p>
+                    
+                    <form id="deleteAccountForm" action="/profile/delete?_method=DELETE" method="POST">
+                        <button type="button" class="btn btn-outline-danger btn-sm w-100 fw-bold" onclick="triggerDelete('account')">
+                            Delete My Account
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -65,12 +120,17 @@
 
     <!-- My Listings Section -->
     <div class="col-md-8">
-        <h3 class="mb-4 fw-bold">My Listings</h3>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold m-0">My Listings</h3>
+            <a href="/products/new" class="btn btn-success rounded-pill fw-bold"><i class="fas fa-plus me-1"></i> Sell New Item</a>
+        </div>
         
         <% if(products.length === 0) { %>
-            <div class="alert alert-light text-center p-5 shadow-sm border-0 rounded-4">
-                <h4>You haven't listed anything yet!</h4>
-                <a href="/products/new" class="btn btn-search mt-3 text-white">Sell your first item</a>
+            <div class="text-center py-5 bg-white rounded-3 shadow-sm">
+                <img src="https://cdn-icons-png.flaticon.com/512/7486/7486747.png" width="120" alt="Empty" class="mb-3 opacity-50">
+                <h4 class="text-muted">No products listed yet</h4>
+                <p class="text-muted mb-4">Your dashboard looks a bit empty.</p>
+                <a href="/products/new" class="btn btn-primary px-4">List your first item</a>
             </div>
         <% } %>
 
@@ -80,22 +140,24 @@
                     <div class="card h-100 shadow-sm border-0 listing-card">
                         <div class="position-relative">
                              <img 
-                                src="<%= product.images.length > 0 ? product.images[0].url : 'https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2029&auto=format&fit=crop' %>" 
+                                src="<%= product.images.length > 0 ? product.images[0].url : 'https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=500' %>" 
                                 class="card-img-top" 
                                 style="height: 12rem; object-fit: cover;"
                             >
                             <div class="card-img-overlay p-2">
-                                <span class="badge bg-light text-dark"><%= product.condition %></span>
+                                <span class="badge bg-light text-dark shadow-sm"><%= product.condition %></span>
                             </div>
                         </div>
-                       
+                        
                         <div class="card-body">
                             <h5 class="card-title fw-bold text-truncate"><%= product.title %></h5>
-                            <p class="card-text text-primary fw-bold">&#8377; <%= product.price.toLocaleString("en-IN") %></p>
-                            <div class="d-flex gap-2">
+                            <p class="card-text text-success fw-bold fs-5">&#8377; <%= product.price.toLocaleString("en-IN") %></p>
+                            
+                            <div class="d-flex gap-2 mt-3">
                                 <a href="/products/<%= product._id %>/edit" class="btn btn-sm btn-outline-dark flex-grow-1">Edit</a>
-                                <form method="POST" action="/products/<%= product._id %>?_method=DELETE" class="flex-grow-1">
-                                    <button class="btn btn-sm btn-outline-danger w-100">Delete</button>
+                                
+                                <form id="delete-form-<%= product._id %>" method="POST" action="/products/<%= product._id %>?_method=DELETE" class="flex-grow-1">
+                                    <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="triggerDelete('<%= product._id %>')">Delete</button>
                                 </form>
                             </div>
                         </div>
@@ -105,3 +167,96 @@
         </div>
     </div>
 </div>
+
+<!-- ========================================== -->
+<!--       THE ANIMATED CONFIRMATION MODAL      -->
+<!-- ========================================== -->
+<div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content text-center p-3">
+      
+      <div class="modal-body">
+        <div class="mb-3">
+            <i class="fas fa-trash-can fa-3x text-danger shake"></i>
+        </div>
+        <h4 class="fw-bold">Are you sure?</h4>
+        <p class="text-muted">Do you really want to delete this? This process cannot be undone.</p>
+      </div>
+      
+      <div class="modal-footer border-0 justify-content-center gap-2">
+        <button type="button" class="btn btn-light px-4 fw-bold" onclick="cancelDelete()">
+            No, Cancel
+        </button>
+        <button type="button" class="btn btn-danger px-4 fw-bold" onclick="confirmDelete()">
+            Yes, Delete
+        </button>
+      </div>
+    
+    </div>
+  </div>
+</div>
+
+<!-- JAVASCRIPT LOGIC -->
+<script>
+    let formIdToDelete = null;
+    let deleteModal = null;
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const modalElement = document.getElementById('deleteConfirmationModal');
+        // Move modal to body to prevent z-index issues
+        document.body.appendChild(modalElement);
+        
+        if (typeof bootstrap !== 'undefined') {
+            deleteModal = new bootstrap.Modal(modalElement);
+        } else {
+            alert("Error: Bootstrap Javascript is missing.");
+        }
+    });
+
+    function triggerDelete(id) {
+        if (!deleteModal) return;
+
+        if(id === 'account') {
+            formIdToDelete = 'deleteAccountForm';
+        } else {
+            formIdToDelete = 'delete-form-' + id;
+        }
+        
+        const modalContent = document.querySelector('#deleteConfirmationModal .modal-content');
+        // Reset state
+        modalContent.classList.remove('fade-green', 'fade-red');
+        
+        deleteModal.show();
+    }
+
+    // 2. LOGIC FOR "NO" (GREEN FADE)
+    function cancelDelete() {
+        const modalContent = document.querySelector('#deleteConfirmationModal .modal-content');
+        
+        // Add the green fade class
+        modalContent.classList.add('fade-green');
+        
+        // Wait 500ms for the CSS transition to finish before hiding the modal
+        setTimeout(() => {
+            deleteModal.hide();
+            // Reset the class for next time
+            setTimeout(() => modalContent.classList.remove('fade-green'), 200);
+        }, 500);
+    }
+
+    // 3. LOGIC FOR "YES" (RED FADE)
+    function confirmDelete() {
+        if(formIdToDelete) {
+            const modalContent = document.querySelector('#deleteConfirmationModal .modal-content');
+            
+            // Add the red fade class
+            modalContent.classList.add('fade-red');
+            
+            // Wait 500ms for the red pulse/fade to finish before deleting
+            setTimeout(() => {
+                const form = document.getElementById(formIdToDelete);
+                if(form) form.submit();
+            }, 500); 
+        }
+    }
+</script>
