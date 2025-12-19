@@ -1,95 +1,204 @@
 <% layout("/layouts/boilerplate") %>
 
-<div class="row mt-3 mb-5">
-  <div class="col-md-8 offset-md-2">
+<!-- Shared Theme CSS (Matches Login) -->
+<style>
+    :root {
+        --primary-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        --dark-gradient: linear-gradient(135deg, #232526 0%, #414345 100%);
+        --primary-color: #11998e;
+        --bg-color: #eef2f3;
+    }
+
+    .signup-container {
+        min-height: 90vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--bg-color);
+        padding: 2rem 0;
+    }
     
-    <div class="card shadow-lg border-0 rounded-3">
-      <!-- CHANGED: Header is now standard and professional -->
-      <div class="card-header bg-success text-white text-center py-4">
-        <h3 class="mb-0 fw-bold"><i class="fas fa-shield-alt me-2"></i>Student Verification</h3>
-        <p class="mb-0 text-white-50 small">Upload your College ID for instant approval.</p>
-      </div>
-      
-      <div class="card-body p-4 bg-light">
-        <form action="/signup" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
-          
-          <!-- Section 1: Basic Info -->
-          <h5 class="text-secondary border-bottom pb-2 mb-3">1. Account Details</h5>
-          
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label class="form-label fw-bold">Username</label>
-              <input name="username" type="text" class="form-control" placeholder="Choose a username" required />
-            </div>
+    .signup-card {
+        border: none;
+        border-radius: 1.5rem;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        background: #fff;
+        overflow: hidden;
+    }
+
+    /* DARK HEADER */
+    .signup-header {
+        background: var(--dark-gradient);
+        padding: 2.5rem 2rem;
+        text-align: center;
+        color: white;
+        position: relative;
+    }
+    
+    .signup-header::after {
+        content: '';
+        position: absolute;
+        bottom: -25px;
+        left: 0;
+        width: 100%;
+        height: 50px;
+        background: #fff;
+        border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+        transform: scaleX(1.3);
+    }
+
+    /* Gradient Icon */
+    .header-icon {
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    }
+
+    .form-control:focus {
+        box-shadow: 0 0 0 0.25rem rgba(17, 153, 142, 0.25);
+        border-color: var(--primary-color);
+    }
+
+    /* Emerald Button */
+    .btn-theme {
+        background: var(--primary-gradient);
+        border: none;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    .btn-theme:hover {
+        background: linear-gradient(135deg, #0e857b 0%, #2dd86e 100%);
+        color: white;
+        box-shadow: 0 8px 20px rgba(17, 153, 142, 0.4);
+        transform: translateY(-2px);
+    }
+    
+    .section-title {
+        color: var(--primary-color);
+        font-weight: 700;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #eef2f3;
+        padding-bottom: 0.5rem;
+    }
+</style>
+
+<div class="signup-container">
+    <div class="col-md-8 col-lg-6">
+        <div class="card signup-card">
             
-            <div class="col-md-6 mb-3">
-              <label class="form-label fw-bold">Email</label>
-              <input name="email" type="email" class="form-control" placeholder="student@example.com" required />
+            <!-- Dark Header -->
+            <div class="signup-header">
+                <div class="mb-2">
+                    <i class="fas fa-user-shield fa-3x header-icon"></i>
+                </div>
+                <h3 class="fw-bold mb-1">Join QuickSell</h3>
+                <p class="small text-white-50 mb-0">Instant Verification. Secure Marketplace.</p>
             </div>
-          </div>
 
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label class="form-label fw-bold">Mobile Number</label>
-              <input name="contact" type="number" class="form-control" placeholder="For buyers to contact you" required />
+            <div class="card-body p-4 p-md-5 pt-4">
+                <form action="/signup" method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+                    
+                    <!-- 1. Account Info -->
+                    <div class="section-title mt-2">1. Account Info</div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small fw-bold">USERNAME</label>
+                            <input name="username" type="text" class="form-control bg-light" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small fw-bold">EMAIL</label>
+                            <input name="email" type="email" class="form-control bg-light" required />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small fw-bold">MOBILE</label>
+                            <input name="contact" type="number" class="form-control bg-light" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label text-muted small fw-bold">COLLEGE</label>
+                            <input name="college" type="text" class="form-control bg-light" required />
+                        </div>
+                    </div>
+
+                    <!-- 2. ID Verification -->
+                    <div class="section-title mt-3">2. Identity Verification</div>
+                    
+                    <div class="alert alert-light border shadow-sm d-flex align-items-center mb-3" role="alert">
+                        <i class="fas fa-robot text-success fa-lg me-3"></i>
+                        <div class="small">
+                            <strong>Instant Check:</strong> We match the <b>Enrollment No.</b> below with your ID Card photo.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold">ENROLLMENT / ROLL NO.</label>
+                        <input name="enrollment" type="text" class="form-control bg-light text-uppercase fw-bold" placeholder="Ex: 0187CS191001" required />
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label text-muted small fw-bold">UPLOAD ID CARD</label>
+                        <input class="form-control" type="file" name="collegeIdImage" accept="image/*" required onchange="previewImage(event)">
+                        <div class="mt-2 text-center">
+                            <img id="cardPreview" src="#" alt="Preview" class="img-fluid rounded shadow-sm d-none" style="max-height: 150px; border: 2px dashed #adb5bd;">
+                        </div>
+                    </div>
+
+                    <!-- 3. Security -->
+                    <div class="section-title mt-3">3. Security</div>
+                    <div class="mb-4">
+                        <label class="form-label text-muted small fw-bold">PASSWORD</label>
+                        <div class="input-group">
+                            <input 
+                                name="password" 
+                                id="signupPassword" 
+                                type="password" 
+                                class="form-control bg-light border-end-0" 
+                                required 
+                            />
+                            <button class="btn btn-light border border-start-0 text-muted" type="button" onclick="togglePasswordVisibility('signupPassword', this)">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button class="btn btn-theme btn-lg fw-bold" type="submit">
+                            VERIFY & REGISTER
+                        </button>
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <small class="text-muted">Already verified?</small>
+                        <a href="/login" class="text-decoration-none fw-bold ms-1" style="color: var(--primary-color);">Login here</a>
+                    </div>
+
+                </form>
             </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label fw-bold">College Name</label>
-              <input name="college" type="text" class="form-control" placeholder="e.g. LNCT Bhopal" required />
-            </div>
-          </div>
-
-          <!-- Section 2: ID Verification -->
-          <h5 class="text-secondary border-bottom pb-2 mb-3 mt-2">2. ID Verification</h5>
-          
-          <!-- CHANGED: Friendly message explaining WHY we need it -->
-          <div class="alert alert-light border shadow-sm d-flex align-items-center" role="alert">
-            <i class="fas fa-user-check text-success fa-lg me-3"></i>
-            <div>
-              <strong>Instant Verification:</strong> We match your <b>Enrollment Number</b> with your College ID Card photo to ensure only real students join.
-            </div>
-          </div>
-
-          <div class="mb-3">
-             <label class="form-label fw-bold">Enrollment / Roll Number</label>
-             <input name="enrollment" type="text" class="form-control form-control-lg text-uppercase" placeholder="EX: 0187CS191001" required />
-          </div>
-
-          <div class="mb-4">
-            <label class="form-label fw-bold">Upload your College ID (front or back side) where your Enrollment Number is visible.</label>
-            <input class="form-control" type="file" name="collegeIdImage" accept="image/*" required onchange="previewImage(event)">
-            <div class="form-text">Photo must be clear and readable.</div>
-            
-            <div class="mt-3 text-center">
-                <img id="cardPreview" src="#" alt="ID Preview" class="img-fluid rounded shadow-sm d-none" style="max-height: 200px; border: 2px dashed #adb5bd;">
-            </div>
-          </div>
-
-          <!-- Section 3: Password -->
-          <h5 class="text-secondary border-bottom pb-2 mb-3">3. Security</h5>
-          <div class="mb-4">
-            <label class="form-label fw-bold">Password</label>
-            <input name="password" type="password" class="form-control" required />
-          </div>
-
-          <div class="d-grid gap-2">
-            <!-- CHANGED: Button text is benefit-oriented -->
-            <button class="btn btn-success btn-lg fw-bold" type="submit">
-              Complete Registration
-            </button>
-          </div>
-          
-          <div class="text-center mt-3">
-            <a href="/login" class="text-decoration-none">Already have an account? Login</a>
-          </div>
-
-        </form>
-      </div>
+        </div>
     </div>
-  </div>
 </div>
 
 <script>
+    function togglePasswordVisibility(inputId, btn) {
+        const input = document.getElementById(inputId);
+        const icon = btn.querySelector('i');
+        if (input.type === "password") {
+            input.type = "text";
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            input.type = "password";
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+
     function previewImage(event) {
         const input = event.target;
         const preview = document.getElementById('cardPreview');
@@ -103,7 +212,6 @@
         }
     }
     
-    // Bootstrap validation
     (function () {
       'use strict'
       var forms = document.querySelectorAll('.needs-validation')
