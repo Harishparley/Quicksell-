@@ -5,30 +5,33 @@
 
 <!-- CUSTOM STYLES FOR ANIMATIONS -->
 <style>
-    /* CRITICAL FIX: Added 'all' to animate Opacity, Color, and Transform together */
+    /* Base Modal State */
     .modal-content {
-        transition: all 0.5s ease-in-out;
+        transition: transform 0.3s ease, background-color 0.3s ease, opacity 0.3s ease;
         opacity: 1;
         transform: scale(1);
     }
 
-    /* Green Fade (Safe/Cancel) - Turn Green and Fade Out */
-    .fade-green {
-        background-color: #d1e7dd !important;
-        border-color: #badbcc !important;
-        transform: scale(0.9); /* Shrink slightly */
-        opacity: 0;            /* Fade to invisible */
+    /* Step 1: Turn Green (Safe) - VISIBLE */
+    .turn-green {
+        background-color: #d1e7dd !important; /* Bootstrap Success-Subtle */
+        border-color: #a3cfbb !important;
+        transform: scale(0.95);
     }
 
-    /* Red Fade (Danger/Delete) - Turn Red and Fade Out */
-    .fade-red {
-        background-color: #f8d7da !important;
-        border-color: #f5c2c7 !important;
-        transform: scale(1.1); /* Grow slightly (Pulse) */
-        opacity: 0;            /* Fade to invisible */
+    /* Step 1: Turn Red (Danger) - VISIBLE */
+    .turn-red {
+        background-color: #f8d7da !important; /* Bootstrap Danger-Subtle */
+        border-color: #f1aeb5 !important;
+        transform: scale(1.05); /* Pulse effect */
+    }
+
+    /* Step 2: Fade Out (Invisible) */
+    .fade-out {
+        opacity: 0 !important;
+        pointer-events: none;
     }
     
-    /* Force Modal to be on top */
     .modal { z-index: 10555 !important; }
     .modal-backdrop { z-index: 10444 !important; }
 </style>
@@ -79,7 +82,7 @@
                 <% } else { %>
                     <div class="alert alert-warning p-2 small">
                         <i class="fa-solid fa-triangle-exclamation"></i> <b>Action Required</b><br>
-                        Add number.
+                        Add number for buyers.
                     </div>
                     <form action="/profile/phone?_method=PUT" method="POST" class="mt-2 d-flex gap-1">
                         <input name="contact" type="number" class="form-control form-control-sm" placeholder="9876543210" required>
@@ -203,8 +206,7 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         const modalElement = document.getElementById('deleteConfirmationModal');
-        // Move modal to body to prevent z-index issues
-        document.body.appendChild(modalElement);
+        document.body.appendChild(modalElement); // Fix z-index issue
         
         if (typeof bootstrap !== 'undefined') {
             deleteModal = new bootstrap.Modal(modalElement);
@@ -223,8 +225,8 @@
         }
         
         const modalContent = document.querySelector('#deleteConfirmationModal .modal-content');
-        // Reset state
-        modalContent.classList.remove('fade-green', 'fade-red');
+        // Reset state (remove old classes)
+        modalContent.classList.remove('turn-green', 'turn-red', 'fade-out');
         
         deleteModal.show();
     }
@@ -233,15 +235,22 @@
     function cancelDelete() {
         const modalContent = document.querySelector('#deleteConfirmationModal .modal-content');
         
-        // Add the green fade class
-        modalContent.classList.add('fade-green');
+        // STEP 1: Turn Green (Stay visible)
+        modalContent.classList.add('turn-green');
         
-        // Wait 500ms for the CSS transition to finish before hiding the modal
+        // STEP 2: Wait 300ms, THEN fade out
         setTimeout(() => {
-            deleteModal.hide();
-            // Reset the class for next time
-            setTimeout(() => modalContent.classList.remove('fade-green'), 200);
-        }, 500);
+            modalContent.classList.add('fade-out');
+            
+            // STEP 3: Wait for fade to finish, then close modal
+            setTimeout(() => {
+                deleteModal.hide();
+                // Clean up for next time
+                setTimeout(() => {
+                    modalContent.classList.remove('turn-green', 'fade-out');
+                }, 200);
+            }, 300);
+        }, 300);
     }
 
     // 3. LOGIC FOR "YES" (RED FADE)
@@ -249,14 +258,14 @@
         if(formIdToDelete) {
             const modalContent = document.querySelector('#deleteConfirmationModal .modal-content');
             
-            // Add the red fade class
-            modalContent.classList.add('fade-red');
+            // STEP 1: Turn Red (Pulse)
+            modalContent.classList.add('turn-red');
             
-            // Wait 500ms for the red pulse/fade to finish before deleting
+            // STEP 2: Wait 400ms (let user see red), then submit
             setTimeout(() => {
                 const form = document.getElementById(formIdToDelete);
                 if(form) form.submit();
-            }, 500); 
+            }, 400); 
         }
     }
 </script>
