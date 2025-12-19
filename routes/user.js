@@ -31,7 +31,11 @@ router
 
 router.get("/logout", userController.logout);
 
+// Profile Routes
 router.get("/profile", isLoggedIn, wrapAsync(userController.renderProfile));
 router.put("/profile/phone", isLoggedIn, wrapAsync(userController.updatePhone));
+
+// --- NEW ROUTE: DELETE ACCOUNT ---
+router.delete("/profile/delete", isLoggedIn, wrapAsync(userController.deleteAccount));
 
 module.exports = router;
