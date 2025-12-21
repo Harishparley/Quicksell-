@@ -13,9 +13,13 @@ router
   .route("/signup")
   .get(userController.renderUserSignupForm)
   .post(
-    upload.single("collegeIdImage"), // <--- CRITICAL: Handles the image
+    upload.single("collegeIdImage"), 
     wrapAsync(userController.signup)
   );
+
+// --- 👇 THIS IS THE MISSING PART THAT CAUSED THE ERROR 👇 ---
+router.post("/verify-email", wrapAsync(userController.verifyEmail));
+// -----------------------------------------------------------
 
 router
   .route("/login")
@@ -35,7 +39,7 @@ router.get("/logout", userController.logout);
 router.get("/profile", isLoggedIn, wrapAsync(userController.renderProfile));
 router.put("/profile/phone", isLoggedIn, wrapAsync(userController.updatePhone));
 
-// --- NEW ROUTE: DELETE ACCOUNT ---
+// Delete Account Route
 router.delete("/profile/delete", isLoggedIn, wrapAsync(userController.deleteAccount));
 
 module.exports = router;
