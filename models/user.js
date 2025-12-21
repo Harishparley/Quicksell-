@@ -6,25 +6,36 @@ const userSchema = new Schema({
   email: {
     type: String,
     required: true,
+    unique: true // Ensure emails are unique
   },
   college: {
     type: String,
     required: true, 
   },
-  // CHANGED: Renamed 'phone' to 'contact' to match your form
   contact: {
     type: Number,
     required: true,
   },
-  // --- NEW FIELDS FOR AI VERIFICATION ---
+  
+  // --- VERIFICATION FIELDS ---
   enrollment: {
     type: String,
     required: true,
     unique: true 
   },
-  isVerified: {
+  // 1. AI Verification Status
+  isIdentityVerified: {
     type: Boolean,
     default: false 
+  },
+  // 2. Email OTP Verification Status
+  isEmailVerified: {
+    type: Boolean,
+    default: false
+  },
+  // Temporary storage for the OTP
+  emailToken: {
+    type: String
   }
 });
 

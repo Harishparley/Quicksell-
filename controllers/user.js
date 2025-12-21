@@ -4,6 +4,17 @@ const { createWorker } = require("tesseract.js");
 const fs = require("fs");
 const sharp = require("sharp");
 const path = require("path");
+const nodemailer = require("nodemailer");
+
+// --- 1. CONFIGURE EMAIL TRANSPORTER ---
+// IMPORTANT: Replace with your actual App Password!
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'harshparley32323115@gmail.com', // PUT YOUR EMAIL
+        pass: 'yrmx unzx kptf rvop'      // PUT YOUR APP PASSWORD
+    }
+});
 
 module.exports.renderUserSignupForm = (req, res) => {
   res.render("users/signup.ejs");
@@ -11,16 +22,10 @@ module.exports.renderUserSignupForm = (req, res) => {
 
 // --- HELPER: SMART NORMALIZE ---
 const smartNormalize = (str) => {
-  return str
-    .toUpperCase()
-    .replace(/1/g, "I")
-    .replace(/0/g, "O")
-    .replace(/5/g, "S")
-    .replace(/8/g, "B")
-    .replace(/[^A-Z0-9]/g, "");
+  return str.toUpperCase().replace(/1/g, "I").replace(/0/g, "O").replace(/5/g, "S").replace(/8/g, "B").replace(/[^A-Z0-9]/g, "");
 };
 
-// --- SIGNUP LOGIC ---
+// --- 2. UPDATED SIGNUP LOGIC (AI + OTP SEND) ---
 module.exports.signup = async (req, res, next) => {
   let processedImagePath = "";
 
@@ -32,81 +37,114 @@ module.exports.signup = async (req, res, next) => {
 
     let { username, email, password, college, contact, enrollment } = req.body;
 
-    // 1. PRE-PROCESSING
+    // A. PRE-PROCESSING
     const originalPath = req.file.path;
-    processedImagePath = path.join(
-      "uploads",
-      `processed-${req.file.filename}.png`
-    );
+    processedImagePath = path.join("uploads", `processed-${req.file.filename}.png`);
+    await sharp(originalPath).resize(1200).grayscale().threshold(140).sharpen().toFile(processedImagePath);
 
-    await sharp(originalPath)
-      .resize(1200)
-      .grayscale()
-      .threshold(140)
-      .sharpen()
-      .toFile(processedImagePath);
-
-    // 2. AI READING
+    // B. AI READING
     const worker = await createWorker("eng");
-    await worker.setParameters({
-      tessedit_char_whitelist: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-    });
-
-    const {
-      data: { text },
-    } = await worker.recognize(processedImagePath);
+    await worker.setParameters({ tessedit_char_whitelist: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" });
+    const { data: { text } } = await worker.recognize(processedImagePath);
     await worker.terminate();
 
-    // 3. SMART CLEANING
+    // C. VERIFICATION
     const aiSmart = smartNormalize(text);
     const userSmart = smartNormalize(enrollment);
 
-    console.log("------------------------------------------------");
-    console.log(`🔎 LOOKING FOR (Smart): ${userSmart}`);
-    console.log(`🤖 AI SAW (Smart):      ${aiSmart}`);
-    console.log("------------------------------------------------");
-
-    // 4. VERIFICATION
     if (aiSmart.includes(userSmart)) {
-      // SUCCESS
+      // SUCCESS: Clean up images
       fs.unlinkSync(originalPath);
       fs.unlinkSync(processedImagePath);
 
+      // --- GENERATE OTP ---
+      const otp = Math.floor(100000 + Math.random() * 900000).toString(); 
+
+      // Create User (BUT DO NOT LOGIN YET)
       const newUser = new User({
-        email,
-        username,
-        college,
-        contact,
-        enrollment,
-        isVerified: true,
+        email, username, college, contact, enrollment,
+        isIdentityVerified: true,  // AI Passed
+        isEmailVerified: false,    // OTP Pending
+        emailToken: otp            // Save OTP temporarily
       });
+      
       const registeredUser = await User.register(newUser, password);
 
-      req.login(registeredUser, (err) => {
-        if (err) return next(err);
-        req.flash("success", "Verification Successful! Welcome.");
-        res.redirect("/products");
-      });
+      // --- SEND EMAIL ---
+      try {
+          await transporter.sendMail({
+              from: 'QuickSell Security',
+              to: email,
+              subject: 'Verify your QuickSell Account',
+              html: `
+                <div style="font-family: sans-serif; padding: 20px;">
+                    <h2>Welcome to QuickSell!</h2>
+                    <p>Your verification code is:</p>
+                    <h1 style="color: #11998e; letter-spacing: 5px;">${otp}</h1>
+                    <p>Enter this code to activate your account.</p>
+                </div>
+              `
+          });
+          console.log(`OTP Sent to ${email}`);
+      } catch (emailErr) {
+          console.error("Email failed:", emailErr);
+          req.flash("error", "ID Verified, but Email Failed. Contact Support.");
+          return res.redirect("/login");
+      }
+
+      // --- REDIRECT TO OTP PAGE ---
+      res.render("users/verify-otp.ejs", { email });
+
     } else {
       // FAIL
       fs.unlinkSync(originalPath);
       if (fs.existsSync(processedImagePath)) fs.unlinkSync(processedImagePath);
-
-      req.flash(
-        "error",
-        `Verification Failed. We could not read "${enrollment}" clearly. Please try again.`
-      );
+      req.flash("error", `Verification Failed. AI could not read "${enrollment}". Please try a clearer photo.`);
       res.redirect("/signup");
     }
   } catch (e) {
     if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-    if (processedImagePath && fs.existsSync(processedImagePath))
-      fs.unlinkSync(processedImagePath);
-
+    if (processedImagePath && fs.existsSync(processedImagePath)) fs.unlinkSync(processedImagePath);
     console.error(e);
-    req.flash("error", "Error processing ID card.");
+    req.flash("error", "Error processing signup.");
     res.redirect("/signup");
   }
+};
+
+// --- 3. NEW: VERIFY OTP FUNCTION ---
+module.exports.verifyEmail = async (req, res, next) => {
+    const { email, otp } = req.body;
+    
+    try {
+        const user = await User.findOne({ email });
+
+        if(!user) {
+            req.flash("error", "User not found.");
+            return res.redirect("/signup");
+        }
+
+        // Check if OTP matches
+        if(user.emailToken === otp) {
+            // SUCCESS
+            user.isEmailVerified = true;
+            user.emailToken = null; // Clear OTP
+            await user.save();
+
+            // Login the user
+            req.login(user, (err) => {
+                if (err) return next(err);
+                req.flash("success", "Account Verified! Welcome to QuickSell.");
+                res.redirect("/products");
+            });
+        } else {
+            // FAIL
+            req.flash("error", "Invalid Code. Please try again.");
+            res.render("users/verify-otp.ejs", { email });
+        }
+    } catch(e) {
+        req.flash("error", "Verification Error.");
+        res.redirect("/login");
+    }
 };
 
 module.exports.renderLoginForm = (req, res) => {
@@ -115,7 +153,6 @@ module.exports.renderLoginForm = (req, res) => {
 
 module.exports.login = async (req, res) => {
   req.flash("success", "Welcome back!");
-  // I added back the redirect logic so users go back to where they were
   let redirectUrl = res.locals.redirectUrl || "/products";
   res.redirect(redirectUrl);
 };
@@ -143,23 +180,14 @@ module.exports.updatePhone = async (req, res) => {
   res.redirect("/profile");
 };
 
-// --- NEW FEATURE: DELETE ACCOUNT ---
 module.exports.deleteAccount = async (req, res, next) => {
   try {
     const userId = req.user._id;
-
-    // 1. Delete all listings by this user
     await Product.deleteMany({ owner: userId });
-
-    // 2. Delete the user profile
     await User.findByIdAndDelete(userId);
-
-    // 3. Log them out
     req.logout((err) => {
-      if (err) {
-        return next(err);
-      }
-      req.flash("success", "Your account and all listings have been deleted.");
+      if (err) return next(err);
+      req.flash("success", "Account deleted.");
       res.redirect("/products");
     });
   } catch (e) {
