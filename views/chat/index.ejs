@@ -1,0 +1,301 @@
+<% layout("/layouts/boilerplate") %>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+<style>
+    /* Chat Layout */
+    .chat-container {
+        height: 80vh;
+        background: #fff;
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        display: flex;
+        margin-bottom: 2rem;
+    }
+
+    /* Left Sidebar */
+    .chat-sidebar {
+        width: 300px;
+        background: #f8f9fa;
+        border-right: 1px solid #eef2f3;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .sidebar-header {
+        padding: 1.5rem;
+        background: var(--primary-gradient);
+        color: white;
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between; /* Spacing for the link */
+        align-items: center;
+    }
+    
+    .sidebar-header a {
+        color: white;
+        text-decoration: none;
+        font-size: 0.85rem;
+        background: rgba(255,255,255,0.2);
+        padding: 5px 10px;
+        border-radius: 20px;
+        transition: background 0.3s;
+    }
+    .sidebar-header a:hover {
+        background: rgba(255,255,255,0.4);
+    }
+
+    .user-list {
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .user-item {
+        padding: 1rem;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .user-item:hover, .user-item.active {
+        background: #e0f2f1;
+        border-left: 4px solid var(--primary);
+    }
+
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        background: #ddd;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+    }
+
+    /* Right Side (Messages) */
+    .chat-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+    }
+
+    .chat-header {
+        padding: 1rem;
+        border-bottom: 1px solid #eee;
+        background: #fff;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .chat-messages {
+        flex: 1;
+        padding: 1.5rem;
+        overflow-y: auto;
+        background: #eef2f3;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    /* Message Bubbles */
+    .message {
+        max-width: 70%;
+        padding: 0.8rem 1.2rem;
+        border-radius: 1rem;
+        position: relative;
+        font-size: 0.95rem;
+        line-height: 1.4;
+    }
+
+    .message.sent {
+        align-self: flex-end;
+        background: var(--primary-gradient);
+        color: white;
+        border-bottom-right-radius: 0;
+    }
+
+    .message.received {
+        align-self: flex-start;
+        background: white;
+        color: #333;
+        border-bottom-left-radius: 0;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .message-time {
+        font-size: 0.7rem;
+        opacity: 0.7;
+        margin-top: 5px;
+        display: block;
+        text-align: right;
+    }
+
+    /* Input Area */
+    .chat-input-area {
+        padding: 1rem;
+        background: #fff;
+        border-top: 1px solid #eee;
+        display: flex;
+        gap: 10px;
+    }
+
+    .chat-input {
+        flex: 1;
+        padding: 0.8rem;
+        border: 1px solid #ddd;
+        border-radius: 50px;
+        outline: none;
+        transition: border-color 0.3s;
+    }
+
+    .chat-input:focus {
+        border-color: var(--primary);
+    }
+
+    .send-btn {
+        background: var(--primary-gradient);
+        color: white;
+        border: none;
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    .send-btn:hover {
+        transform: scale(1.1);
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="chat-container">
+        
+        <!-- Sidebar -->
+        <div class="chat-sidebar">
+            <div class="sidebar-header">
+                <span><i class="fas fa-comments me-2"></i> Inbox</span>
+                <!-- Added Link to go back to full inbox -->
+                <a href="/chat" title="See All Chats"><i class="fas fa-sync-alt"></i> All</a>
+            </div>
+            
+            <div class="user-list">
+                <% if(allUsers.length === 0) { %>
+                    <div class="p-3 text-center text-muted small">No active conversations.</div>
+                <% } %>
+
+                <% for(let user of allUsers) { %>
+                    <!-- Keep 'focused=true' if it was already there, otherwise just link to chat -->
+                    <div class="user-item <%= selectedUser && selectedUser._id.equals(user._id) ? 'active' : '' %>" 
+                         onclick="window.location.href='/chat/<%= user._id %>'">
+                        <div class="user-avatar" style="background-color: #<%= user._id.toString().substring(0,6) %>">
+                            <%= user.username[0].toUpperCase() %>
+                        </div>
+                        <div>
+                            <div class="fw-bold"><%= user.username %></div>
+                            <small class="text-muted"><%= user.college %></small>
+                        </div>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="chat-main">
+            <% if(selectedUser) { %>
+                <!-- Header -->
+                <div class="chat-header">
+                    <div class="user-avatar" style="background-color: #<%= selectedUser._id.toString().substring(0,6) %>">
+                        <%= selectedUser.username[0].toUpperCase() %>
+                    </div>
+                    <div>
+                        <div class="fw-bold"><%= selectedUser.username %></div>
+                        <small class="text-success"><i class="fas fa-circle fa-xs"></i> Online</small>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <div class="chat-messages" id="messageContainer">
+                    <% for(let msg of messages) { %>
+                        <div class="message <%= msg.sender.equals(currUser._id) ? 'sent' : 'received' %>">
+                            <%= msg.content %>
+                            <span class="message-time"><%= msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) %></span>
+                        </div>
+                    <% } %>
+                </div>
+
+                <!-- Input -->
+                <div class="chat-input-area">
+                    <input type="text" id="msgInput" class="chat-input" placeholder="Type a message...">
+                    <button class="send-btn" onclick="sendMessage()">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+
+            <% } else { %>
+                <!-- Empty State -->
+                <div class="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
+                    <i class="fas fa-paper-plane fa-4x mb-3 text-secondary opacity-25"></i>
+                    <h4>Select a conversation</h4>
+                    <p>Click on a user from the left to start chatting.</p>
+                </div>
+            <% } %>
+        </div>
+
+    </div>
+</div>
+
+<% if(selectedUser) { %>
+<script>
+    const socket = io();
+    const senderId = "<%= currUser._id %>"; 
+    const receiverId = "<%= selectedUser._id %>"; 
+    
+    socket.emit('join-chat', senderId);
+
+    const messageContainer = document.getElementById('messageContainer');
+    const msgInput = document.getElementById('msgInput');
+
+    messageContainer.scrollTop = messageContainer.scrollHeight;
+
+    function sendMessage() {
+        const content = msgInput.value;
+        if(!content) return;
+
+        socket.emit('send-message', { senderId, receiverId, content });
+        appendMessage(content, 'sent');
+        msgInput.value = '';
+    }
+
+    socket.on('receive-message', (data) => {
+        if (data.senderId === receiverId) {
+            appendMessage(data.content, 'received');
+        }
+    });
+
+    function appendMessage(text, type) {
+        const div = document.createElement('div');
+        div.classList.add('message', type);
+        const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        div.innerHTML = `${text} <span class="message-time">${time}</span>`;
+        messageContainer.appendChild(div);
+        messageContainer.scrollTop = messageContainer.scrollHeight;
+    }
+
+    msgInput.addEventListener("keypress", function(event) {
+        if (event.key === "Enter") sendMessage();
+    });
+</script>
+<% } %>
