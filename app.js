@@ -1,6 +1,12 @@
 if (process.env.NODE_ENV != "production") {
   require("dotenv").config();
+  // --- DEBUGGING LOG (Delete after checking) ---
+console.log("--------------------------------");
+console.log("Email Loaded:", process.env.GMAIL_USER);
+console.log("Password Loaded:", process.env.GMAIL_PASS ? "Yes (Hidden)" : "NO - MISSING");
+console.log("--------------------------------");
 }
+
 
 const express = require("express");
 const app = express();

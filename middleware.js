@@ -29,10 +29,12 @@ module.exports.isOwner = async (req, res, next) => {
   next();
 };
 
-// --- NEW SECURITY CHECK ---
+// --- FIX: UPDATED SECURITY CHECK ---
 module.exports.isVerified = (req, res, next) => {
-    if (req.user && !req.user.isVerified) {
-        req.flash("error", "You must verify your ID card before selling!");
+    // We now check for 'isIdentityVerified' (AI) AND 'isEmailVerified' (OTP)
+    // If either is missing/false, we block the action.
+    if (req.user && (!req.user.isIdentityVerified || !req.user.isEmailVerified)) {
+        req.flash("error", "You must complete verification (ID Card + Email) before selling!");
         return res.redirect("/profile"); 
     }
     next();

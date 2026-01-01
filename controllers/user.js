@@ -1,17 +1,18 @@
 const User = require("../models/user.js");
 const Product = require("../models/product.js");
+const Message = require("../models/message.js"); // Added for cleanup
 const { createWorker } = require("tesseract.js");
 const fs = require("fs");
 const sharp = require("sharp");
 const path = require("path");
 const nodemailer = require("nodemailer");
 
-// --- 1. CONFIGURE EMAIL TRANSPORTER ---
+// --- 1. CONFIGURE EMAIL TRANSPORTER (SECURE) ---
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.GMAIL_USER, // Loaded from .env
-    pass: process.env.GMAIL_PASS, // Loaded from .env
+    user: process.env.GMAIL_USER, // Uses .env for security
+    pass: process.env.GMAIL_PASS, // Uses .env for security
   },
 });
 
@@ -19,22 +20,21 @@ module.exports.renderUserSignupForm = (req, res) => {
   res.render("users/signup.ejs");
 };
 
-// --- HELPER: SMART NORMALIZE ---
-// Removes spaces, hyphens, and fixes common OCR mistakes (1->I, 0->O)
+// --- HELPER: SMART NORMALIZE & CLEANING ---
+// Fixes common OCR mistakes (homoglyphs)
 const smartNormalize = (str) => {
   if (!str) return "";
   return str
     .toUpperCase()
-    .replace(/\s/g, "") // Remove ALL spaces
-    .replace(/-/g, "") // Remove hyphens
-    .replace(/1/g, "I")
-    .replace(/0/g, "O")
-    .replace(/5/g, "S")
-    .replace(/8/g, "B")
-    .replace(/[^A-Z0-9]/g, ""); // Keep only Alphanumeric
+    .replace(/[^A-Z0-9]/g, "") // Remove non-alphanumeric chars
+    .replace(/1/g, "I") // Map 1 to I (common mixup)
+    .replace(/0/g, "O") // Map 0 to O
+    .replace(/5/g, "S") // Map 5 to S
+    .replace(/8/g, "B") // Map 8 to B
+    .replace(/2/g, "Z"); // Map 2 to Z (sometimes happens)
 };
 
-// --- 2. SIGNUP LOGIC (AI + OTP) ---
+// --- 2. SIGNUP LOGIC (Advanced AI + OTP) ---
 module.exports.signup = async (req, res, next) => {
   let processedImagePath = "";
 
@@ -46,7 +46,7 @@ module.exports.signup = async (req, res, next) => {
 
     let { username, email, password, college, contact, enrollment } = req.body;
 
-    // A. PRE-PROCESSING (Aggressive Cleaning)
+    // A. INTELLIGENT IMAGE PRE-PROCESSING
     const originalPath = req.file.path;
     processedImagePath = path.join(
       "uploads",
@@ -54,18 +54,20 @@ module.exports.signup = async (req, res, next) => {
     );
 
     await sharp(originalPath)
-      .resize(1500) // Upscale for clarity
-      .grayscale() // Remove color noise
-      .normalize() // Fix contrast
-      .threshold(160) // Force B&W (Removes background patterns)
-      .sharpen() // Crisp edges
+      .rotate() // 1. Auto-orient image (Fixes phone rotation issues)
+      .resize(1200) // 2. High resolution but not huge
+      .grayscale() // 3. Remove color distractions
+      .linear(1.5, 0) // 4. Boost Contrast (Make darks darker, lights lighter)
+      .sharpen({ sigma: 2 }) // 5. Sharpen text edges
       .toFile(processedImagePath);
 
-    // B. AI READING
+    // B. AI READING ENGINE
     const worker = await createWorker("eng");
-    // Whitelist only valid characters to prevent garbage output
+
+    // Configure Tesseract for single block text (PSM 6)
     await worker.setParameters({
       tessedit_char_whitelist: "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-/",
+      tessedit_pageseg_mode: "6",
     });
 
     const {
@@ -73,39 +75,39 @@ module.exports.signup = async (req, res, next) => {
     } = await worker.recognize(processedImagePath);
     await worker.terminate();
 
-    // C. MATCHING
+    // C. MATCHING ALGORITHM
     const aiSmart = smartNormalize(text);
     const userSmart = smartNormalize(enrollment);
 
-    // Log for debugging
+    // Debugging Logs
     console.log("------------------------------------------------");
-    console.log(`🔎 LOOKING FOR: ${userSmart}`);
-    console.log(`🤖 AI SAW:      ${aiSmart.substring(0, 50)}...`);
+    console.log(`🔎 TARGET (Input):  ${userSmart}`);
+    console.log(`🤖 AI SAW (Clean):  ${aiSmart.substring(0, 50)}...`);
     console.log("------------------------------------------------");
 
+    // D. CHECK FOR SUBSTRING MATCH
     if (aiSmart.includes(userSmart)) {
-      // SUCCESS
+      // --- MATCH SUCCESS ---
       fs.unlinkSync(originalPath);
       fs.unlinkSync(processedImagePath);
 
-      // Generate 6-digit OTP
+      // Generate OTP
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-      // Create User (Pending Verification)
       const newUser = new User({
         email,
         username,
         college,
         contact,
         enrollment,
-        isIdentityVerified: true, // AI Passed
-        isEmailVerified: false, // Email Pending
+        isIdentityVerified: true,
+        isEmailVerified: false,
         emailToken: otp,
       });
 
       const registeredUser = await User.register(newUser, password);
 
-      // Send Email
+      // Send OTP Email
       try {
         await transporter.sendMail({
           from: "QuickSell Security",
@@ -120,35 +122,39 @@ module.exports.signup = async (req, res, next) => {
                 </div>
               `,
         });
-        console.log(`OTP Sent to ${email}`);
       } catch (emailErr) {
         console.error("Email failed:", emailErr);
+        // Allow login even if email fails, but warn user
         req.flash(
           "error",
-          "ID Verified, but Email Failed. Check email address."
+          "ID Verified, but Email Failed to send. Please try login."
         );
         return res.redirect("/login");
       }
 
       res.render("users/verify-otp.ejs", { email });
     } else {
-      // FAIL
+      // --- MATCH FAILED ---
       fs.unlinkSync(originalPath);
       if (fs.existsSync(processedImagePath)) fs.unlinkSync(processedImagePath);
 
       req.flash(
         "error",
-        `Verification Failed. We could not find "${enrollment}" on the card. Try a clearer photo.`
+        `Verification Failed. The AI read "${text.substring(
+          0,
+          15
+        )}..." but could not find "${enrollment}". Ensure the image is right-side up and clear.`
       );
       res.redirect("/signup");
     }
   } catch (e) {
-    // Cleanup on crash
+    // Cleanup on error
     if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     if (processedImagePath && fs.existsSync(processedImagePath))
       fs.unlinkSync(processedImagePath);
+
     console.error(e);
-    req.flash("error", "Error processing signup.");
+    req.flash("error", "System Error during verification. Please try again.");
     res.redirect("/signup");
   }
 };
@@ -209,10 +215,23 @@ module.exports.updatePhone = async (req, res) => {
   req.flash("success", "Updated!");
   res.redirect("/profile");
 };
+
+// --- 4. DELETE ACCOUNT (Fixed to remove Messages) ---
 module.exports.deleteAccount = async (req, res, next) => {
   try {
-    await Product.deleteMany({ owner: req.user._id });
-    await User.findByIdAndDelete(req.user._id);
+    const userId = req.user._id;
+
+    // 1. Delete Products
+    await Product.deleteMany({ owner: userId });
+
+    // 2. Delete Messages (Prevent 500 Errors in Chat)
+    await Message.deleteMany({
+      $or: [{ sender: userId }, { receiver: userId }],
+    });
+
+    // 3. Delete User
+    await User.findByIdAndDelete(userId);
+
     req.logout((err) => {
       if (err) return next(err);
       req.flash("success", "Account deleted.");

@@ -5,7 +5,7 @@ const Message = require("../models/message");
 const { isLoggedIn } = require("../middleware");
 const wrapAsync = require("../utils/wrapAsync");
 
-// Helper: Get Active Conversations
+// Helper: Get Active Conversations with Unread Counts
 async function getConversations(currentUserId) {
     const messages = await Message.find({
         $or: [{ sender: currentUserId }, { receiver: currentUserId }]
@@ -16,9 +16,27 @@ async function getConversations(currentUserId) {
     const userMap = new Map();
     
     messages.forEach(msg => {
-        const otherUser = msg.sender._id.equals(currentUserId) ? msg.receiver : msg.sender;
-        if (!userMap.has(otherUser._id.toString())) {
-            userMap.set(otherUser._id.toString(), otherUser);
+        // --- FIX: Check if user exists (Prevents 500 Error) ---
+        if (!msg.sender || !msg.receiver) {
+            return; 
+        }
+        
+        const isSender = msg.sender._id.equals(currentUserId);
+        const otherUser = isSender ? msg.receiver : msg.sender;
+        const otherUserId = otherUser._id.toString();
+        
+        if (!userMap.has(otherUserId)) {
+            // Convert to Object to append 'unreadCount' property
+            const userObj = otherUser.toObject();
+            userObj.unreadCount = 0;
+            userMap.set(otherUserId, userObj);
+        }
+
+        // Calculate Unread Messages:
+        // If I am the receiver AND message is NOT read, increment count for that sender
+        if (!isSender && !msg.isRead) {
+            const userEntry = userMap.get(otherUserId);
+            userEntry.unreadCount += 1;
         }
     });
 
@@ -38,13 +56,32 @@ router.get("/", isLoggedIn, wrapAsync(async (req, res) => {
 // 2. Specific Chat (Handles both Inbox Mode and Seller Mode)
 router.get("/:userId", isLoggedIn, wrapAsync(async (req, res) => {
     const { userId } = req.params;
-    const { focused } = req.query; // <--- CHECK FOR FLAG
+    const { focused } = req.query; 
     
-    const selectedUser = await User.findById(userId);
-    if(!selectedUser) {
+    // Check if user exists first
+    let selectedUserDoc;
+    try {
+        selectedUserDoc = await User.findById(userId);
+    } catch(e) {
+        req.flash("error", "Invalid User ID");
+        return res.redirect("/chat");
+    }
+
+    if(!selectedUserDoc) {
         req.flash("error", "User not found");
         return res.redirect("/chat");
     }
+
+    // --- MARK AS READ LOGIC ---
+    // When opening a chat, mark all messages FROM this user TO me as read
+    await Message.updateMany(
+        { sender: userId, receiver: req.user._id, isRead: false },
+        { isRead: true }
+    );
+
+    // Convert doc to object to match getConversations structure
+    const selectedUser = selectedUserDoc.toObject();
+    selectedUser.unreadCount = 0; // Just marked as read
 
     let conversationUsers;
 
@@ -52,11 +89,10 @@ router.get("/:userId", isLoggedIn, wrapAsync(async (req, res) => {
     if (focused === 'true') {
         conversationUsers = [selectedUser]; 
     } else {
-        // Normal mode: Show history
         conversationUsers = await getConversations(req.user._id);
         
         // Ensure selected user is in the list
-        const isAlreadyInList = conversationUsers.some(u => u._id.equals(selectedUser._id));
+        const isAlreadyInList = conversationUsers.some(u => u._id.toString() === selectedUser._id.toString());
         if (!isAlreadyInList) {
             conversationUsers.unshift(selectedUser);
         }
@@ -68,7 +104,8 @@ router.get("/:userId", isLoggedIn, wrapAsync(async (req, res) => {
             { sender: req.user._id, receiver: userId },
             { sender: userId, receiver: req.user._id }
         ]
-    }).sort({ timestamp: 1 }); 
+    }).sort({ timestamp: 1 })
+    .populate("sender receiver");
 
     res.render("chat/index.ejs", { 
         allUsers: conversationUsers, 

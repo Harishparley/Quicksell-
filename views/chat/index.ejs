@@ -1,5 +1,6 @@
 <% layout("/layouts/boilerplate") %>
 
+<!-- Socket.io Client (Already loaded in Navbar, but safe to keep/remove) -->
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <style>
@@ -29,7 +30,7 @@
         color: white;
         font-weight: bold;
         display: flex;
-        justify-content: space-between; /* Spacing for the link */
+        justify-content: space-between;
         align-items: center;
     }
     
@@ -59,6 +60,7 @@
         display: flex;
         align-items: center;
         gap: 10px;
+        position: relative; /* Needed for badge positioning */
     }
 
     .user-item:hover, .user-item.active {
@@ -76,6 +78,20 @@
         justify-content: center;
         color: white;
         font-weight: bold;
+    }
+
+    /* Unread Badge Style */
+    .unread-badge {
+        background-color: #ff4757;
+        color: white;
+        font-size: 0.75rem;
+        font-weight: bold;
+        border-radius: 50%;
+        padding: 2px 6px;
+        min-width: 20px;
+        text-align: center;
+        margin-left: auto; /* Pushes badge to the right */
+        box-shadow: 0 2px 5px rgba(255, 71, 87, 0.4);
     }
 
     /* Right Side (Messages) */
@@ -187,7 +203,6 @@
         <div class="chat-sidebar">
             <div class="sidebar-header">
                 <span><i class="fas fa-comments me-2"></i> Inbox</span>
-                <!-- Added Link to go back to full inbox -->
                 <a href="/chat" title="See All Chats"><i class="fas fa-sync-alt"></i> All</a>
             </div>
             
@@ -197,7 +212,6 @@
                 <% } %>
 
                 <% for(let user of allUsers) { %>
-                    <!-- Keep 'focused=true' if it was already there, otherwise just link to chat -->
                     <div class="user-item <%= selectedUser && selectedUser._id.equals(user._id) ? 'active' : '' %>" 
                          onclick="window.location.href='/chat/<%= user._id %>'">
                         <div class="user-avatar" style="background-color: #<%= user._id.toString().substring(0,6) %>">
@@ -207,6 +221,11 @@
                             <div class="fw-bold"><%= user.username %></div>
                             <small class="text-muted"><%= user.college %></small>
                         </div>
+                        
+                        <!-- UNREAD BADGE LOGIC -->
+                        <% if(user.unreadCount > 0) { %>
+                            <span class="unread-badge"><%= user.unreadCount %></span>
+                        <% } %>
                     </div>
                 <% } %>
             </div>
@@ -259,43 +278,87 @@
 
 <% if(selectedUser) { %>
 <script>
-    const socket = io();
+    console.log("Chat Script Loaded");
+
+    // --- ROBUST SOCKET INITIALIZATION ---
+    let clientSocket;
+
+    if (typeof socket !== 'undefined') {
+        console.log("Using global socket from Navbar");
+        clientSocket = socket;
+    } else if (typeof io !== 'undefined') {
+        console.log("Creating new socket connection for Chat");
+        clientSocket = io();
+    } else {
+        console.error("Socket.io library not loaded! Chat cannot function.");
+    }
+
+    // IDs
     const senderId = "<%= currUser._id %>"; 
     const receiverId = "<%= selectedUser._id %>"; 
     
-    socket.emit('join-chat', senderId);
+    if (clientSocket) {
+        clientSocket.emit('join-chat', senderId);
+        
+        // Listen for messages
+        clientSocket.on('receive-message', (data) => {
+            console.log("Got message:", data);
+            
+            // Check if this message belongs to the current open chat
+            if (data.senderId === receiverId) {
+                appendMessage(data.content, 'received');
+            } else {
+                // If it's from someone else, show the red dot on the navbar
+                const navbarBadge = document.getElementById('msgBadge');
+                if (navbarBadge) {
+                    navbarBadge.style.display = 'block';
+                }
+            }
+        });
+    }
 
     const messageContainer = document.getElementById('messageContainer');
     const msgInput = document.getElementById('msgInput');
 
-    messageContainer.scrollTop = messageContainer.scrollHeight;
+    // Scroll to bottom
+    if(messageContainer) messageContainer.scrollTop = messageContainer.scrollHeight;
 
-    function sendMessage() {
+    // Defined globally so the button onclick can find it
+    window.sendMessage = function() {
         const content = msgInput.value;
         if(!content) return;
 
-        socket.emit('send-message', { senderId, receiverId, content });
+        console.log("Sending:", content);
+
+        if (clientSocket) {
+            clientSocket.emit('send-message', {
+                senderId,
+                receiverId,
+                content
+            });
+        } else {
+            console.error("Cannot send: Socket not connected");
+        }
+
         appendMessage(content, 'sent');
         msgInput.value = '';
     }
 
-    socket.on('receive-message', (data) => {
-        if (data.senderId === receiverId) {
-            appendMessage(data.content, 'received');
-        }
-    });
-
     function appendMessage(text, type) {
         const div = document.createElement('div');
         div.classList.add('message', type);
+        
         const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         div.innerHTML = `${text} <span class="message-time">${time}</span>`;
+        
         messageContainer.appendChild(div);
         messageContainer.scrollTop = messageContainer.scrollHeight;
     }
 
-    msgInput.addEventListener("keypress", function(event) {
-        if (event.key === "Enter") sendMessage();
-    });
+    if(msgInput) {
+        msgInput.addEventListener("keypress", function(event) {
+            if (event.key === "Enter") sendMessage();
+        });
+    }
 </script>
 <% } %>
