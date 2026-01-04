@@ -1,12 +1,6 @@
 if (process.env.NODE_ENV != "production") {
   require("dotenv").config();
-  // --- DEBUGGING LOG (Delete after checking) ---
-console.log("--------------------------------");
-console.log("Email Loaded:", process.env.GMAIL_USER);
-console.log("Password Loaded:", process.env.GMAIL_PASS ? "Yes (Hidden)" : "NO - MISSING");
-console.log("--------------------------------");
 }
-
 
 const express = require("express");
 const app = express();
@@ -21,19 +15,19 @@ const passport = require("passport");
 const LocalStrategy = require("passport-local");
 const User = require("./models/user.js");
 
-// --- NEW IMPORTS FOR CHAT & EMAIL ---
+// --- IMPORTS FOR CHAT & EMAIL ---
 const http = require("http");
 const { Server } = require("socket.io");
 const chatRouter = require("./routes/chat.js");
 const Message = require("./models/message.js");
-const nodemailer = require("nodemailer"); // Import Nodemailer
+const nodemailer = require("nodemailer");
 
-// --- EMAIL CONFIGURATION ---
+// --- EMAIL CONFIGURATION (SECURE) ---
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'harshparley32323115@gmail.com', 
-    pass: 'yrmx unzx kptf rvop'      
+    user: process.env.GMAIL_USER, // Loaded from .env
+    pass: process.env.GMAIL_PASS  // Loaded from .env
   }
 });
 
@@ -71,7 +65,48 @@ const productRouter = require("./routes/product.js");
 const reviewRouter = require("./routes/review.js");
 const userRouter = require("./routes/user.js");
 
-const MONGO_URL = "mongodb://127.0.0.1:27017/quick_sell";
+// // Database Connection (Uses .env if available, else localhost)
+// const dbUrl = process.env.MONGO_URL || "mongodb://127.0.0.1:27017/quick_sell";
+// // const MONGO_URL = "mongodb://127.0.0.1:27017/quick_sell";
+
+// app.js - Bottom Section
+
+// 1. Get DB URL
+const dbUrl = process.env.MONGO_URL || "mongodb://127.0.0.1:27017/quick_sell";
+
+// 2. Strict Connection Settings
+const connectionParams = {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of hanging
+    socketTimeoutMS: 45000,
+};
+
+// 3. Connect to DB FIRST
+mongoose.connect(dbUrl, connectionParams)
+  .then(() => {
+    console.log("-------------------------------------------");
+    console.log("✅ SUCCESS: Connected to MongoDB Atlas!");
+    console.log("-------------------------------------------");
+
+    // 4. ONLY Start Server if DB works
+    const port = process.env.PORT || 8080;
+    server.listen(port, () => {
+      console.log(`🚀 Quick Sell is live on port ${port}`);
+    });
+  })
+  .catch((err) => {
+    console.log("-------------------------------------------");
+    console.log("❌ ERROR: Database Connection FAILED");
+    console.log("-------------------------------------------");
+    console.log("Reason:", err.message); // <--- THIS WILL TELL US THE REAL PROBLEM
+    console.log("-------------------------------------------");
+  });
+
+
+
+
+
 
 main()
   .then(() => {
@@ -82,7 +117,7 @@ main()
   });
 
 async function main() {
-  await mongoose.connect(MONGO_URL);
+  await mongoose.connect(dbUrl);
 }
 
 app.set("view engine", "ejs");
@@ -130,16 +165,19 @@ app.use("/products/:id/reviews", reviewRouter);
 app.use("/chat", chatRouter); 
 app.use("/", userRouter); 
 
-// --- TEMPORARY FIX ROUTE (Delete after use) ---
+// --- TEMPORARY FIX ROUTE (Disabled for Security) ---
+// Uncomment only if you need to fix a duplicate key error
+/*
 app.get("/delete-user", async (req, res) => {
     const { email } = req.query;
     if(email) {
         await User.deleteOne({ email: email });
-        res.send(`Deleted user with email: ${email}. You can now signup again.`);
+        res.send(`Deleted user with email: ${email}.`);
     } else {
         res.send("Please provide an email query parameter.");
     }
 });
+*/
 
 // --- SOCKET.IO SERVER SETUP ---
 const server = http.createServer(app); 
@@ -155,7 +193,6 @@ io.on("connection", (socket) => {
     socket.join(userId);
     onlineUsers.add(userId); 
     socket.userId = userId;  
-    // console.log(`User ${userId} is Online`);
   });
 
   // 2. Handle Messages
@@ -198,6 +235,13 @@ app.use((err, req, res, next) => {
   res.status(statusCode).render("error.ejs", { message, err });
 });
 
-server.listen(8080, () => {
-  console.log("Quick Sell App is listening on port 8080");
+// server.listen(8080, () => {
+//   console.log("Quick Sell App is listening on port 8080");
+// });
+
+// Use the Cloud's port, or 8080 if on Localhost
+const port = process.env.PORT || 8080;
+
+server.listen(port, () => {
+  console.log(`Quick Sell App is listening on port ${port}`);
 });
