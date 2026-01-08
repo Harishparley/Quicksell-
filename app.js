@@ -144,3 +144,14 @@ const port = process.env.PORT || 8080;
 server.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
+
+server.listen(port, () => {
+  console.log(`Quick Sell App is listening on port ${port}`);
+  
+  // --- DEBUGGING LOGS ---
+  // This will tell us if the server can actually see your secrets
+  console.log("DEBUG CHECK:");
+  console.log("- GMAIL_USER type:", typeof process.env.GMAIL_USER);
+  console.log("- GMAIL_USER length:", process.env.GMAIL_USER ? process.env.GMAIL_USER.length : "N/A");
+  console.log("- GMAIL_PASS exists:", process.env.GMAIL_PASS ? "YES" : "NO");
+});
