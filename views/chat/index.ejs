@@ -1,6 +1,6 @@
 <% layout("/layouts/boilerplate") %>
 
-<!-- Socket.io Client (Already loaded in Navbar, but safe to keep/remove) -->
+<!-- Socket.io Client -->
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
 <style>
@@ -60,7 +60,7 @@
         display: flex;
         align-items: center;
         gap: 10px;
-        position: relative; /* Needed for badge positioning */
+        position: relative;
     }
 
     .user-item:hover, .user-item.active {
@@ -80,7 +80,7 @@
         font-weight: bold;
     }
 
-    /* Unread Badge Style */
+    /* Sidebar Unread Badge Style */
     .unread-badge {
         background-color: #ff4757;
         color: white;
@@ -90,7 +90,7 @@
         padding: 2px 6px;
         min-width: 20px;
         text-align: center;
-        margin-left: auto; /* Pushes badge to the right */
+        margin-left: auto;
         box-shadow: 0 2px 5px rgba(255, 71, 87, 0.4);
     }
 
@@ -222,7 +222,7 @@
                             <small class="text-muted"><%= user.college %></small>
                         </div>
                         
-                        <!-- UNREAD BADGE LOGIC -->
+                        <!-- Sidebar Unread Badge -->
                         <% if(user.unreadCount > 0) { %>
                             <span class="unread-badge"><%= user.unreadCount %></span>
                         <% } %>
@@ -283,6 +283,7 @@
     // --- ROBUST SOCKET INITIALIZATION ---
     let clientSocket;
 
+    // Check if the Navbar created a socket already
     if (typeof socket !== 'undefined') {
         console.log("Using global socket from Navbar");
         clientSocket = socket;
@@ -304,15 +305,20 @@
         clientSocket.on('receive-message', (data) => {
             console.log("Got message:", data);
             
-            // Check if this message belongs to the current open chat
             if (data.senderId === receiverId) {
+                // If it's from the person we are chatting with:
+                // 1. Show message
                 appendMessage(data.content, 'received');
-            } else {
-                // If it's from someone else, show the red dot on the navbar
+                
+                // 2. HIDE the Red Dot (because we saw it)
                 const navbarBadge = document.getElementById('msgBadge');
-                if (navbarBadge) {
-                    navbarBadge.style.display = 'block';
-                }
+                if (navbarBadge) navbarBadge.style.display = 'none';
+                
+            } else {
+                // If it's from SOMEONE ELSE:
+                // 1. SHOW the Red Dot on Navbar
+                const navbarBadge = document.getElementById('msgBadge');
+                if (navbarBadge) navbarBadge.style.display = 'block';
             }
         });
     }
@@ -327,8 +333,6 @@
     window.sendMessage = function() {
         const content = msgInput.value;
         if(!content) return;
-
-        console.log("Sending:", content);
 
         if (clientSocket) {
             clientSocket.emit('send-message', {
