@@ -1,247 +1,146 @@
-if (process.env.NODE_ENV != "production") {
-  require("dotenv").config();
+if (process.env.NODE_ENV !== "production") {
+    require("dotenv").config();
 }
 
 const express = require("express");
-const app = express();
 const mongoose = require("mongoose");
 const path = require("path");
+const http = require("http");
 const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
-const ExpressError = require("./utils/ExpressError.js");
 const session = require("express-session");
 const flash = require("connect-flash");
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
-const User = require("./models/user.js");
-
-// --- IMPORTS FOR CHAT & EMAIL ---
-const http = require("http");
 const { Server } = require("socket.io");
-const chatRouter = require("./routes/chat.js");
+
+// Local Imports
+const User = require("./models/user.js");
 const Message = require("./models/message.js");
-const nodemailer = require("nodemailer");
+const { sendOfflineNotification } = require("./utils/email.js");
+const ExpressError = require("./utils/ExpressError.js");
 
-// --- EMAIL CONFIGURATION (SECURE) ---
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER, // Loaded from .env
-    pass: process.env.GMAIL_PASS  // Loaded from .env
-  }
-});
-
-// Helper: Send Email Notification
-async function sendEmailNotification(receiverId, content) {
-    try {
-        const receiver = await User.findById(receiverId);
-        if(!receiver || !receiver.email) return;
-
-        const mailOptions = {
-            from: 'QuickSell Notifications <no-reply@quicksell.com>',
-            to: receiver.email,
-            subject: 'New Message on QuickSell!',
-            html: `
-                <div style="font-family: sans-serif; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-                    <h2 style="color: #11998e;">You have a new message!</h2>
-                    <p>Someone is interested in your item.</p>
-                    <blockquote style="background: #f9f9f9; padding: 10px; border-left: 4px solid #11998e;">
-                        "${content}"
-                    </blockquote>
-                    <a href="http://localhost:8080/chat" style="background: #11998e; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reply Now</a>
-                </div>
-            `
-        };
-
-        await transporter.sendMail(mailOptions);
-        console.log(`Email sent to ${receiver.email}`);
-    } catch (err) {
-        console.error("Email failed:", err);
-    }
-}
-
-// Route Imports
+// Routes
 const productRouter = require("./routes/product.js");
 const reviewRouter = require("./routes/review.js");
 const userRouter = require("./routes/user.js");
+const chatRouter = require("./routes/chat.js");
 
-// // Database Connection (Uses .env if available, else localhost)
-// const dbUrl = process.env.MONGO_URL || "mongodb://127.0.0.1:27017/quick_sell";
-// // const MONGO_URL = "mongodb://127.0.0.1:27017/quick_sell";
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
-// app.js - Bottom Section
-
-// 1. Get DB URL
+// Database Connection
 const dbUrl = process.env.MONGO_URL || "mongodb://127.0.0.1:27017/quick_sell";
 
-// 2. Strict Connection Settings
-const connectionParams = {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of hanging
-    socketTimeoutMS: 45000,
-};
+mongoose.connect(dbUrl)
+    .then(() => console.log("Database Connected"))
+    .catch((err) => console.error("Database Connection Error:", err));
 
-// 3. Connect to DB FIRST
-mongoose.connect(dbUrl, connectionParams)
-  .then(() => {
-    console.log("-------------------------------------------");
-    console.log("✅ SUCCESS: Connected to MongoDB Atlas!");
-    console.log("-------------------------------------------");
-
-    // 4. ONLY Start Server if DB works
-    const port = process.env.PORT || 8080;
-    server.listen(port, () => {
-      console.log(`🚀 Quick Sell is live on port ${port}`);
-    });
-  })
-  .catch((err) => {
-    console.log("-------------------------------------------");
-    console.log("❌ ERROR: Database Connection FAILED");
-    console.log("-------------------------------------------");
-    console.log("Reason:", err.message); // <--- THIS WILL TELL US THE REAL PROBLEM
-    console.log("-------------------------------------------");
-  });
-
-
-
-
-
-
-main()
-  .then(() => {
-    console.log("Connected to Quick Sell DB");
-  })
-  .catch((err) => {
-    console.log(err);
-  });
-
-async function main() {
-  await mongoose.connect(dbUrl);
-}
-
+// App Configuration
+app.engine("ejs", ejsMate);
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
+
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
-app.engine("ejs", ejsMate);
 app.use(express.static(path.join(__dirname, "/public")));
 
-const sessionOptions = {
-  secret: process.env.SECRET || "thisshouldbeabettersecret",
-  resave: false,
-  saveUninitialized: true,
-  cookie: {
-    expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    httpOnly: true,
-  },
+// Session Config
+const sessionConfig = {
+    secret: process.env.SECRET || "developmentsecret",
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+        httpOnly: true,
+        expires: Date.now() + 1000 * 60 * 60 * 24 * 7, // 7 days
+        maxAge: 1000 * 60 * 60 * 24 * 7
+    }
 };
 
-app.get("/", (req, res) => {
-  res.redirect("/products");
-});
-
-app.use(session(sessionOptions));
+app.use(session(sessionConfig));
 app.use(flash());
 
+// Authentication Middleware
 app.use(passport.initialize());
 app.use(passport.session());
 passport.use(new LocalStrategy(User.authenticate()));
-
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
+// Global Variables Middleware
 app.use((req, res, next) => {
-  res.locals.success = req.flash("success");
-  res.locals.error = req.flash("error");
-  res.locals.currUser = req.user;
-  next();
+    res.locals.success = req.flash("success");
+    res.locals.error = req.flash("error");
+    res.locals.currUser = req.user;
+    next();
 });
 
-// --- ROUTE MOUNTING ---
+// Routes
 app.use("/products", productRouter);
 app.use("/products/:id/reviews", reviewRouter);
-app.use("/chat", chatRouter); 
-app.use("/", userRouter); 
+app.use("/chat", chatRouter);
+app.use("/", userRouter);
 
-// --- TEMPORARY FIX ROUTE (Disabled for Security) ---
-// Uncomment only if you need to fix a duplicate key error
-/*
-app.get("/delete-user", async (req, res) => {
-    const { email } = req.query;
-    if(email) {
-        await User.deleteOne({ email: email });
-        res.send(`Deleted user with email: ${email}.`);
-    } else {
-        res.send("Please provide an email query parameter.");
-    }
+app.get("/", (req, res) => {
+    res.redirect("/products");
 });
-*/
 
-// --- SOCKET.IO SERVER SETUP ---
-const server = http.createServer(app); 
-const io = new Server(server);         
-
-// Track Online Users
-const onlineUsers = new Set(); 
+// Socket.io Logic (Real-time Chat)
+const onlineUsers = new Set();
 
 io.on("connection", (socket) => {
-  
-  // 1. Join Private Room & Mark Online
-  socket.on("join-chat", (userId) => {
-    socket.join(userId);
-    onlineUsers.add(userId); 
-    socket.userId = userId;  
-  });
-
-  // 2. Handle Messages
-  socket.on("send-message", async (data) => {
-    const { senderId, receiverId, content } = data;
-
-    // A. Save to DB
-    const newMessage = new Message({
-      sender: senderId,
-      receiver: receiverId,
-      content: content
+    
+    socket.on("join-chat", (userId) => {
+        socket.join(userId);
+        onlineUsers.add(userId);
+        socket.userId = userId; // Store for disconnect handling
     });
-    await newMessage.save();
 
-    // B. Check if Receiver is Online
-    if (onlineUsers.has(receiverId)) {
-        // ONLINE: Send Instant Socket Message
-        io.to(receiverId).emit("receive-message", {
-            senderId,
-            content,
-            timestamp: new Date()
+    socket.on("send-message", async (data) => {
+        const { senderId, receiverId, content } = data;
+
+        // 1. Persist message
+        const newMessage = new Message({
+            sender: senderId,
+            receiver: receiverId,
+            content
         });
-    } else {
-        // OFFLINE: Send Email Nudge
-        console.log(`User ${receiverId} is offline. Sending email...`);
-        sendEmailNotification(receiverId, content);
-    }
-  });
+        await newMessage.save();
 
-  // 3. Handle Disconnect
-  socket.on("disconnect", () => {
-    if(socket.userId) {
-        onlineUsers.delete(socket.userId); 
-    }
-  });
+        // 2. Real-time delivery OR Email fallback
+        if (onlineUsers.has(receiverId)) {
+            io.to(receiverId).emit("receive-message", {
+                senderId,
+                content,
+                timestamp: new Date()
+            });
+        } else {
+            // Asynchronous email notification
+            sendOfflineNotification(receiverId, content);
+        }
+    });
+
+    socket.on("disconnect", () => {
+        if (socket.userId) {
+            onlineUsers.delete(socket.userId);
+        }
+    });
+});
+
+// Error Handling
+app.all("*", (req, res, next) => {
+    next(new ExpressError(404, "Page Not Found"));
 });
 
 app.use((err, req, res, next) => {
-  let { statusCode = 500, message = "Something went wrong!" } = err;
-  res.status(statusCode).render("error.ejs", { message, err });
+    const { statusCode = 500 } = err;
+    if (!err.message) err.message = "Something went wrong";
+    res.status(statusCode).render("error.ejs", { err });
 });
 
-// server.listen(8080, () => {
-//   console.log("Quick Sell App is listening on port 8080");
-// });
-
-// Use the Cloud's port, or 8080 if on Localhost
+// Start Server
 const port = process.env.PORT || 8080;
-
 server.listen(port, () => {
-  console.log(`Quick Sell App is listening on port ${port}`);
+    console.log(`Server running on port ${port}`);
 });
