@@ -129,8 +129,17 @@ io.on("connection", (socket) => {
 });
 
 // Error Handling
-app.all("*", (req, res, next) => {
-    next(new ExpressError(404, "Page Not Found"));
+// app.all("*", (req, res, next) => {
+//     next(new ExpressError(404, "Page Not Found"));
+// });
+
+// --- TEMPORARY FIX ROUTE (Use this to fix the duplicate error) ---
+app.get("/delete-user", async (req, res) => {
+    // Change this email to the one causing the error
+    const emailToDelete = "harshparley32323115@gmail.com"; 
+    
+    await User.deleteOne({ email: emailToDelete });
+    res.send(`Deleted user: ${emailToDelete}. Now try Signup again.`);
 });
 
 app.use((err, req, res, next) => {
@@ -139,19 +148,8 @@ app.use((err, req, res, next) => {
     res.status(statusCode).render("error.ejs", { err });
 });
 
-// Start Server
+// Start Server (Only ONE listen call)
 const port = process.env.PORT || 8080;
 server.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-});
-
-server.listen(port, () => {
-  console.log(`Quick Sell App is listening on port ${port}`);
-  
-  // --- DEBUGGING LOGS ---
-  // This will tell us if the server can actually see your secrets
-  console.log("DEBUG CHECK:");
-  console.log("- GMAIL_USER type:", typeof process.env.GMAIL_USER);
-  console.log("- GMAIL_USER length:", process.env.GMAIL_USER ? process.env.GMAIL_USER.length : "N/A");
-  console.log("- GMAIL_PASS exists:", process.env.GMAIL_PASS ? "YES" : "NO");
+    console.log(`Quick Sell App is listening on port ${port}`);
 });
