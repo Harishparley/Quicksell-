@@ -4,6 +4,7 @@
   <div class="col-8 offset-2">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h3><%= product.title %></h3>
+      <!-- Back button -->
       <a href="/products" class="btn btn-outline-secondary btn-sm"
         ><i class="fa-solid fa-arrow-left"></i> Back</a
       >
@@ -60,7 +61,8 @@
           </p>
           <p class="text-muted">
             <i class="fa-solid fa-user"></i> Sold by:
-            <b><%= product.owner.username %></b>
+            <!-- SAFE CHECK: If owner was deleted, show 'Unknown' instead of crashing -->
+            <b><%= product.owner ? product.owner.username : 'Unknown User (Deleted)' %></b>
           </p>
         </div>
         <h3 class="text-success fw-bold">
@@ -74,7 +76,8 @@
       </p>
 
       <div class="mt-4">
-        <% if(currUser && currUser._id.equals(product.owner._id)) {%>
+        <!-- Added check for product.owner existing before checking ID -->
+        <% if(currUser && product.owner && currUser._id.equals(product.owner._id)) {%>
         <!-- Owner Options -->
         <div class="d-flex gap-2">
           <a
@@ -94,8 +97,8 @@
         
         <!-- Chat option -->
         <div class="d-grid gap-2 mb-3">
-          <% if(currUser && !currUser._id.equals(product.owner._id)) { %>
-          <!-- UPDATED LINK: Added ?focused=true -->
+          <!-- Only show if the user is NOT the owner AND owner exists -->
+          <% if(currUser && product.owner && !currUser._id.equals(product.owner._id)) { %>
           <a
             href="/chat/<%= product.owner._id %>?focused=true"
             class="btn btn-success btn-lg"
@@ -189,7 +192,7 @@
       <div class="card col-12 mb-3 border-0 shadow-sm bg-light">
         <div class="card-body">
           <div class="d-flex justify-content-between">
-            <h6 class="card-title fw-bold">@<%=review.author.username%></h6>
+            <h6 class="card-title fw-bold">@<%= review.author ? review.author.username : 'Unknown' %></h6>
             <p
               class="starability-result"
               data-rating="<%= review.rating %>"
@@ -197,7 +200,8 @@
           </div>
           <p class="card-text text-muted"><%= review.comment %></p>
         </div>
-        <% if(currUser && currUser._id.equals(review.author._id)) { %>
+        <!-- Safety check for review author deletion -->
+        <% if(currUser && review.author && currUser._id.equals(review.author._id)) { %>
         <form
           class="p-2 text-end"
           method="POST"

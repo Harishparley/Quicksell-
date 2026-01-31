@@ -128,27 +128,29 @@ io.on("connection", (socket) => {
     });
 });
 
-// Error Handling
-// app.all("*", (req, res, next) => {
-//     next(new ExpressError(404, "Page Not Found"));
-// });
-
 // --- TEMPORARY FIX ROUTE (Use this to fix the duplicate error) ---
 app.get("/delete-user", async (req, res) => {
     // Change this email to the one causing the error
-    const emailToDelete = "harshparley32323115@gmail.com"; 
+    const emailToDelete = "harishparleyhp@gmail.com"; 
     
     await User.deleteOne({ email: emailToDelete });
     res.send(`Deleted user: ${emailToDelete}. Now try Signup again.`);
 });
 
+// 404 Handler
+// app.all("*", (req, res, next) => {
+//     next(new ExpressError(404, "Page Not Found"));
+// });
+
+// Error Handling Middleware
 app.use((err, req, res, next) => {
     const { statusCode = 500 } = err;
     if (!err.message) err.message = "Something went wrong";
-    res.status(statusCode).render("error.ejs", { err });
+    
+    // FIX: Pass 'message' explicitly so error.ejs can use it
+    res.status(statusCode).render("error.ejs", { message: err.message, err });
 });
 
-// Start Server (Only ONE listen call)
 const port = process.env.PORT || 8080;
 server.listen(port, () => {
     console.log(`Quick Sell App is listening on port ${port}`);
