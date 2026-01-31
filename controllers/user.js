@@ -1,6 +1,6 @@
 const User = require("../models/user.js");
 const Product = require("../models/product.js");
-const Message = require("../models/message.js"); // Added for cleanup
+const Message = require("../models/message.js"); 
 const { createWorker } = require("tesseract.js");
 const fs = require("fs");
 const sharp = require("sharp");
@@ -11,8 +11,8 @@ const nodemailer = require("nodemailer");
 const transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
-    user: process.env.GMAIL_USER, // Uses .env for security
-    pass: process.env.GMAIL_PASS, // Uses .env for security
+    user: process.env.GMAIL_USER, 
+    pass: process.env.GMAIL_PASS, 
   },
 });
 
@@ -21,7 +21,6 @@ module.exports.renderUserSignupForm = (req, res) => {
 };
 
 // --- HELPER: SMART NORMALIZE & CLEANING ---
-// Fixes common OCR mistakes (homoglyphs)
 const smartNormalize = (str) => {
   if (!str) return "";
   return str
@@ -46,7 +45,7 @@ module.exports.signup = async (req, res, next) => {
 
     let { username, email, password, college, contact, enrollment } = req.body;
 
-    // A. INTELLIGENT IMAGE PRE-PROCESSING
+    // A.IMAGE PRE-PROCESSING
     const originalPath = req.file.path;
     processedImagePath = path.join(
       "uploads",

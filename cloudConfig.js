@@ -10,8 +10,8 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'quick_sell_DEV', // CHANGED: New folder name for the new project
-    allowedFormats: ["png", "jpg", "jpeg"], // CHANGED: Use array for formats
+    folder: 'quick_sell_DEV', 
+    allowedFormats: ["png", "jpg", "jpeg"], 
   },
 });
  
