@@ -129,13 +129,22 @@ io.on("connection", (socket) => {
 });
 
 // --- TEMPORARY FIX ROUTE (Use this to fix the duplicate error) ---
-app.get("/delete-user", async (req, res) => {
-    // Change this email to the one causing the error
-    const emailToDelete = "harishparleyhp@gmail.com"; 
+// app.get("/delete-user", async (req, res) => {
+//     // Change this email to the one causing the error
+//     const emailToDelete = "harishparleyhp@gmail.com"; 
     
-    await User.deleteOne({ email: emailToDelete });
-    res.send(`Deleted user: ${emailToDelete}. Now try Signup again.`);
-});
+//     await User.deleteOne({ email: emailToDelete });
+//     res.send(`Deleted user: ${emailToDelete}. Now try Signup again.`);
+// });
+
+// app.get("/clean-ghost", async (req, res) => {
+//     const Product = require("./models/product.js"); // Ensure model is loaded
+    
+//     // Deletes any product with the title "wfsf"
+//     const result = await Product.deleteMany({ title: "wfsf" });
+    
+//     res.send(`Deleted ${result.deletedCount} ghost items. Go back to Home Page.`);
+// });
 
 // 404 Handler
 // app.all("*", (req, res, next) => {
