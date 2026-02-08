@@ -6,32 +6,17 @@
     --primary-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
     --dark-gradient: linear-gradient(135deg, #232526 0%, #414345 100%);
     
-    /* Backgrounds & Text (Light Mode Defaults) */
-    --bg-color: #eef2f3;      
+    /* Backgrounds & Text */
+    --bg-color: #eef2f3;      /* Soft Light Gray */
     --card-bg: #FFFFFF;
     --text-main: #2c3e50;
-    --text-muted: #6c757d;
-    --border-color: rgba(0,0,0,0.05);
-    --input-bg: #f8f9fa;
-    --navbar-bg: rgba(255, 255, 255, 0.95);
+    --text-muted: #95a5a6;
     
     /* UI Elements */
     --radius: 16px;           
     --shadow-sm: 0 5px 15px rgba(0, 0, 0, 0.05);
-    --shadow-hover: 0 15px 30px rgba(17, 153, 142, 0.2); 
+    --shadow-hover: 0 15px 30px rgba(17, 153, 142, 0.2); /* Green Shadow */
     --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-}
-
-/* --- DARK MODE VARIABLES (Crucial for Toggle to Work) --- */
-body.dark-mode {
-    --bg-color: #121212;      /* Deep Black */
-    --card-bg: #1e1e1e;       /* Dark Gray Cards */
-    --text-main: #e0e0e0;     /* Light Gray Text */
-    --text-muted: #a0a0a0;
-    --border-color: rgba(255,255,255,0.1);
-    --input-bg: #2d2d2d;
-    --navbar-bg: rgba(18, 18, 18, 0.95);
-    --shadow-sm: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 body {
@@ -42,7 +27,6 @@ body {
     flex-direction: column;
     min-height: 100vh;
     overflow-x: hidden;
-    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .container {
@@ -62,11 +46,10 @@ body {
 /* --- NAVBAR --- */
 .navbar {
     height: 5rem;
-    background-color: var(--navbar-bg) !important;
+    background-color: rgba(255, 255, 255, 0.95) !important;
     backdrop-filter: blur(10px); 
-    border-bottom: 1px solid var(--border-color) !important;
+    border-bottom: 1px solid rgba(0,0,0,0.05) !important;
     box-shadow: var(--shadow-sm);
-    transition: background-color 0.3s ease;
 }
 
 .navbar-brand {
@@ -79,7 +62,7 @@ body {
 }
 
 .nav-link {
-    color: var(--text-main) !important;
+    color: var(--secondary) !important;
     font-weight: 600;
     transition: var(--transition);
     margin: 0 5px;
@@ -90,7 +73,7 @@ body {
     transform: translateY(-2px);
 }
 
-/* --- BUTTONS --- */
+/* --- BUTTONS (Emerald Gradient) --- */
 .btn-search, .add-btn, .edit-btn {
     background: var(--primary-gradient) !important;
     color: #fff !important;
@@ -110,25 +93,23 @@ body {
 .search-inp {
     border-radius: 50px;
     padding: 0.7rem 1.5rem;
-    background-color: var(--input-bg);
+    background-color: #f8f9fa;
     border: 1px solid transparent;
     transition: var(--transition);
-    color: var(--text-main);
 }
 
 .search-inp:focus {
-    background-color: var(--card-bg);
+    background-color: #fff;
     border-color: var(--primary);
     box-shadow: 0 0 0 4px rgba(17, 153, 142, 0.15);
-    color: var(--text-main);
 }
 
-/* --- CARDS --- */
-.listing-card, .card {
+/* --- PREMIUM PRODUCT CARDS --- */
+.listing-card {
     border: none !important;
     border-radius: var(--radius) !important;
-    background: var(--card-bg) !important;
-    box-shadow: var(--shadow-sm);
+    background: #fff;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
     transition: all 0.3s ease;
     overflow: hidden;
     position: relative;
@@ -137,7 +118,7 @@ body {
 
 .listing-card:hover {
     transform: translateY(-8px); 
-    box-shadow: var(--shadow-hover);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
 }
 
 .card-img-wrapper {
@@ -187,7 +168,6 @@ body {
 
 .card-body {
     padding: 1.25rem !important;
-    color: var(--text-main);
 }
 
 .card-title {
@@ -197,7 +177,7 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: var(--text-main);
+    color: var(--secondary);
 }
 
 .card-college {
@@ -212,7 +192,7 @@ body {
     color: var(--primary);
 }
 
-/* Price Badge */
+/* UPDATED: Price Badge Pop */
 .price-badge {
     font-size: 1.2rem; 
     font-weight: 800; 
@@ -235,7 +215,7 @@ body {
 
 /* --- FILTERS --- */
 #filters {
-    background: var(--card-bg);
+    background: white;
     padding: 1rem;
     border-radius: var(--radius);
     box-shadow: var(--shadow-sm);
@@ -254,12 +234,12 @@ body {
     border-radius: 50px;
     cursor: pointer;
     text-decoration: none;
-    color: var(--text-main);
+    color: var(--secondary);
 }
 
 .filter:hover {
     opacity: 1;
-    background-color: var(--input-bg);
+    background-color: #e0f2f1; /* Light Teal Tint */
     color: var(--primary);
     transform: translateY(-2px);
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
@@ -275,7 +255,7 @@ body {
     border-radius: var(--radius);
     overflow: hidden;
     box-shadow: var(--shadow-sm);
-    background: var(--card-bg);
+    background: white;
 }
 
 .show-img {
@@ -294,16 +274,15 @@ body {
 
 /* --- FOOTER --- */
 footer {
-    background-color: var(--card-bg) !important;
+    background-color: white !important;
     margin-top: auto;
     box-shadow: 0 -5px 20px rgba(0,0,0,0.03);
     padding: 2rem 0;
-    color: var(--text-main);
 }
 
 .f-info-links a {
     text-decoration: none;
-    color: var(--text-main);
+    color: var(--secondary);
     transition: color 0.2s;
 }
 
@@ -324,22 +303,4 @@ footer {
     border-color: #f5c2c7;
     color: #842029;
     border-radius: 10px;
-}
-
-/* Dark Mode Toggle Button Style */
-.theme-toggle {
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 50%;
-    transition: background-color 0.3s;
-    color: var(--text-main);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-}
-.theme-toggle:hover {
-    background-color: var(--input-bg);
-    color: var(--primary);
 }

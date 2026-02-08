@@ -1,5 +1,5 @@
 <style>
-  /* Use CSS Variables from style.css for consistency */
+  /* Existing styles... */
   .btn-search {
     background: var(--primary-gradient) !important;
     color: #fff !important;
@@ -14,40 +14,20 @@
     box-shadow: 0 6px 20px rgba(17, 153, 142, 0.4);
     color: white !important;
   }
-  .btn-search i {
-    display: inline;
-    margin-left: 0.5rem;
-  }
   .search-inp {
     border-radius: 50px;
     padding: 0.7rem 1.5rem;
     font-size: 0.9rem;
-    background-color: var(--input-bg);
+    background-color: #f8f9fa;
     border: 1px solid transparent;
-    color: var(--text-main);
   }
   .search-inp:focus {
-    background-color: var(--card-bg);
+    background-color: #fff;
     border-color: var(--primary);
     box-shadow: 0 0 0 4px rgba(17, 153, 142, 0.15);
-    color: var(--text-main);
   }
   
-  /* Active Link Style */
-  .nav-link.active {
-      color: var(--primary) !important;
-      font-weight: 700;
-  }
-
-  /* Theme Toggle Icon */
-  #theme-icon {
-      font-size: 1.2rem;
-      transition: transform 0.5s ease;
-      cursor: pointer;
-      color: var(--text-main);
-  }
-
-  /* Notification Badge */
+  /* NEW: Notification Badge */
   .notification-badge {
       position: absolute;
       top: 5px;
@@ -56,7 +36,7 @@
       height: 10px;
       background-color: #ff4757;
       border-radius: 50%;
-      border: 2px solid var(--card-bg);
+      border: 2px solid white;
       display: none; /* Hidden by default */
       animation: pulse 2s infinite;
   }
@@ -71,7 +51,7 @@
 <!-- Load Socket.io Client GLOBALLY -->
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
-<nav class="navbar navbar-expand-md sticky-top">
+<nav class="navbar navbar-expand-md bg-white border-bottom sticky-top">
   <div class="container-fluid">
     <a class="navbar-brand" href="/products">
       <i class="fa-solid fa-graduation-cap"></i> Quick Sell
@@ -91,7 +71,7 @@
         <a class="nav-link" href="/products">Explore</a>
       </div>
 
-      <!-- Search Bar (Centered Logic) -->
+      <!-- Search Bar -->
       <div class="navbar-nav mx-auto">
         <form class="d-flex" role="search" action="/products" method="GET">
           <input
@@ -110,18 +90,13 @@
       <!-- Right Side Links -->
       <div class="navbar-nav ms-auto align-items-center gap-2">
         
-        <!-- Dark Mode Toggle -->
-        <div class="theme-toggle me-2" onclick="toggleTheme()">
-            <i id="theme-icon" class="fas fa-moon"></i>
-        </div>
-
         <% if(!currUser) { %>
             <a class="nav-link" href="/signup"><b>Signup</b></a>
             <a class="nav-link btn btn-search text-white px-3" href="/login">Log in</a>
         <% } else { %>
-            <!-- Only logged in users see these -->
             <a class="nav-link" href="/products/new">Sell Item</a>
             
+            <!-- MESSAGES LINK WITH BADGE -->
             <a class="nav-link position-relative" href="/chat" id="messagesLink">
                 <i class="fa-regular fa-comment-dots"></i> Messages
                 <span class="notification-badge" id="msgBadge"></span>
@@ -152,68 +127,36 @@
   </div>
 </div>
 
-<script>
-    // --- Dark Mode Logic ---
-    const themeIcon = document.getElementById('theme-icon');
-    const body = document.body;
-
-    // 1. Check LocalStorage on Load
-    const currentTheme = localStorage.getItem('theme');
-    if (currentTheme === 'dark') {
-        body.classList.add('dark-mode');
-        themeIcon.classList.remove('fa-moon');
-        themeIcon.classList.add('fa-sun');
-    }
-
-    // 2. Toggle Function
-    function toggleTheme() {
-        body.classList.toggle('dark-mode');
-        
-        // Animation & Icon Switch
-        if (body.classList.contains('dark-mode')) {
-            themeIcon.classList.remove('fa-moon');
-            themeIcon.classList.add('fa-sun');
-            localStorage.setItem('theme', 'dark');
-            themeIcon.style.transform = 'rotate(360deg)';
-        } else {
-            themeIcon.classList.remove('fa-sun');
-            themeIcon.classList.add('fa-moon');
-            localStorage.setItem('theme', 'light');
-            themeIcon.style.transform = 'rotate(0deg)';
-        }
-    }
-</script>
-
 <!-- GLOBAL SOCKET LOGIC -->
 <% if(currUser) { %>
 <script>
     // 1. Initialize Socket
-    // We use 'let' so we can assign it to window.socket for the chat page to use
-    // Using window.socket prevents the "Identifier already declared" error
-    if (typeof io !== 'undefined') {
-        window.socket = io();
-        const currentUserId = "<%= currUser._id %>";
+    const socket = io();
+    const currentUserId = "<%= currUser._id %>";
 
-        // 2. Join my personal room (so I can receive messages)
-        window.socket.emit('join-chat', currentUserId);
+    // 2. Join my personal room (so I can receive messages)
+    socket.emit('join-chat', currentUserId);
 
-        // 3. Listen for incoming messages GLOBALLY
-        window.socket.on('receive-message', (data) => {
-            // A. Show Red Dot Badge
-            const badge = document.getElementById('msgBadge');
-            if(badge) badge.style.display = 'block';
+    // 3. Listen for incoming messages GLOBALLY
+    socket.on('receive-message', (data) => {
+        // A. Show Red Dot Badge
+        const badge = document.getElementById('msgBadge');
+        if(badge) badge.style.display = 'block';
 
-            // B. Show Toast Popup
-            const toastEl = document.getElementById('msgToast');
-            const toastSenderEl = document.getElementById('toastSender');
-            
-            // If we are NOT already on the chat page, show notification
-            if (!window.location.href.includes('/chat')) {
-                toastSenderEl.innerText = "You have a new message";
-                const toast = new bootstrap.Toast(toastEl);
-                toast.show();
-            }
-        });
-    }
+        // B. Play Notification Sound (Optional but cool)
+        // const audio = new Audio('/sounds/notification.mp3');
+        // audio.play();
+
+        // C. Show Toast Popup
+        const toastEl = document.getElementById('msgToast');
+        const toastSenderEl = document.getElementById('toastSender');
+        
+        // If we are NOT already on the chat page, show notification
+        if (!window.location.href.includes('/chat')) {
+            toastSenderEl.innerText = "You have a new message";
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+    });
 </script>
 <% } %>
